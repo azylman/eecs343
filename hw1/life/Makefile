@@ -1,0 +1,12 @@
+CC=gcc
+CFLAGS=-O3 -Wall -Wextra -Werror -pg
+
+all: life.o tools.o
+	$(CC) $(CFLAGS) life.o tools.o -o life
+life.o: life.c
+	$(CC) $(CFLAGS) -c life.c
+tools.o: tools/tools.c
+	$(CC) $(CFLAGS) -c tools/tools.c
+clean:
+	rm -f life.o tools.o life gmon.out
+
