@@ -15,7 +15,7 @@ A system call is what lets software make a request to the kernel via an interrup
 4. To a programmer, a system call looks like any other call to a library procedure. Is it important that a
 programmer know which library procedures result in system calls? Under what circumstances and why?
 
-
+It is important in cases where performance is an issue because every time you make a system call, you take a performance hit.
 
 5. How do user programs and system services interact in a microkernel architecture? What are the advan-
 tages/disadvantages of the microkernel approach to system design?
