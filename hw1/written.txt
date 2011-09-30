@@ -4,7 +4,7 @@
 
 2. List three hardware features that enable the implementation of operating system functionality and explain the significance of each. For instance, a fixed rate clock allows the creation of a variable timer for timesharing.
 
-
+Memory protection is a feature of the architecture that allows OSes to prevent processes from modifying sections of memory that they shouldn't. Protected mode is a feature that allows software to utilize virtual memory. Interrupts are also features that are used for system calls.
 
 3. What is the purpose of a system call in an operating system?
 
