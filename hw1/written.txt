@@ -1,6 +1,6 @@
 1. Several goals, including resource utilization, timeliness and robustness, guide the design of an operating system. Give an example of two such design goals and explain how they might contradict each other.
 
-
+Two common design goals are security and high performance. Depending on how these are implemented, these can very easily contradict each other, as they do in a microkernel architecture.
 
 2. List three hardware features that enable the implementation of operating system functionality and explain the significance of each. For instance, a fixed rate clock allows the creation of a variable timer for timesharing.
 
