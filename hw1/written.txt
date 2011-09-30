@@ -1,19 +1,33 @@
-1.
+1. Several goals, including resource utilization, timeliness and robustness, guide the design of an operating
+system. Give an example of two such design goals and explain how they might contradict each other.
 
 
-2.
+
+2. List three hardware features that enable the implementation of operating system functionality and explain the
+significance of each. For instance, a fixed rate clock allows the creation of a variable timer for timesharing.
 
 
-3.
+
+3. What is the purpose of a system call in an operating system
 
 
-4.
+
+4. To a programmer, a system call looks like any other call to a library procedure. Is it important that a
+programmer know which library procedures result in system calls? Under what circumstances and why?
 
 
-5.
+
+5. How do user programs and system services interact in a microkernel architecture? What are the advan-
+tages/disadvantages of the microkernel approach to system design?
 
 
-6.
+
+6. From the course webpage download the handout for an implementation of Conway's Game of Life. After
+downloading it, follow the directions from the Projects' section. The life directory includes an incomplete
+Makefile with a few dfinitions and mostly empty targets. Your task is to complete this Makefile without
+changing the rest of the project file names or locations). Please include the body of your new Makefile
+with the rest of this assignment.
+
 CC=gcc
 CFLAGS=-O3 -Wall -Wextra -Werror -pg
 
