@@ -11,6 +11,7 @@
 #define __MYSS_IMPL__
 
 /************System include***********************************************/
+#include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
@@ -64,6 +65,7 @@ int main(int argc, char *argv[])
 		PrintPError("SIGTSTP");
 
 	while (!forceExit) /* repeat forever */ {
+		printf("tsh> ");
 		/* read command line */
 		getCommandLine(&cmdLine, BUFSIZE);
 
