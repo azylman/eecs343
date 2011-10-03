@@ -1,43 +1,43 @@
 /***************************************************************************
- *  Title: Runtime environment 
+ *	Title: Runtime environment 
  * -------------------------------------------------------------------------
- *    Purpose: Runs commands
- *    Author: Stefan Birrer
- *    Version: $Revision: 1.3 $
- *    Last Modification: $Date: 2009/10/12 20:50:12 $
- *    File: $RCSfile: runtime.c,v $
- *    Copyright: (C) 2002 by Stefan Birrer
+ *		Purpose: Runs commands
+ *		Author: Stefan Birrer
+ *		Version: $Revision: 1.3 $
+ *		Last Modification: $Date: 2009/10/12 20:50:12 $
+ *		File: $RCSfile: runtime.c,v $
+ *		Copyright: (C) 2002 by Stefan Birrer
  ***************************************************************************/
 /***************************************************************************
- *  ChangeLog:
+ *	ChangeLog:
  * -------------------------------------------------------------------------
- *    $Log: runtime.c,v $
- *    Revision 1.3  2009/10/12 20:50:12  jot836
- *    Commented tsh C files
+ *		$Log: runtime.c,v $
+ *		Revision 1.3	2009/10/12 20:50:12	jot836
+ *		Commented tsh C files
  *
- *    Revision 1.2  2009/10/11 04:45:50  npb853
- *    Changing the identation of the project to be GNU.
+ *		Revision 1.2	2009/10/11 04:45:50	npb853
+ *		Changing the identation of the project to be GNU.
  *
- *    Revision 1.1  2005/10/13 05:24:59  sbirrer
- *    - added the skeleton files
+ *		Revision 1.1	2005/10/13 05:24:59	sbirrer
+ *		- added the skeleton files
  *
- *    Revision 1.6  2002/10/24 21:32:47  sempi
- *    final release
+ *		Revision 1.6	2002/10/24 21:32:47	sempi
+ *		final release
  *
- *    Revision 1.5  2002/10/23 21:54:27  sempi
- *    beta release
+ *		Revision 1.5	2002/10/23 21:54:27	sempi
+ *		beta release
  *
- *    Revision 1.4  2002/10/21 04:49:35  sempi
- *    minor correction
+ *		Revision 1.4	2002/10/21 04:49:35	sempi
+ *		minor correction
  *
- *    Revision 1.3  2002/10/21 04:47:05  sempi
- *    Milestone 2 beta
+ *		Revision 1.3	2002/10/21 04:47:05	sempi
+ *		Milestone 2 beta
  *
- *    Revision 1.2  2002/10/15 20:37:26  sempi
- *    Comments updated
+ *		Revision 1.2	2002/10/15 20:37:26	sempi
+ *		Comments updated
  *
- *    Revision 1.1  2002/10/15 20:20:56  sempi
- *    Milestone 1
+ *		Revision 1.1	2002/10/15 20:20:56	sempi
+ *		Milestone 1
  *
  ***************************************************************************/
 #define __RUNTIME_IMPL__
@@ -60,10 +60,10 @@
 #include "io.h"
 
 /************Defines and Typedefs*****************************************/
-/*  #defines and typedefs should have their names in all caps.
- *  Global variables begin with g. Global constants with k. Local
- *  variables should be in all lower case. When initializing
- *  structures and arrays, line everything up in neat columns.
+/*	#defines and typedefs should have their names in all caps.
+ *	Global variables begin with g. Global constants with k. Local
+ *	variables should be in all lower case. When initializing
+ *	structures and arrays, line everything up in neat columns.
  */
 
 /************Global Variables*********************************************/
@@ -72,8 +72,8 @@
 
 typedef struct bgjob_l
 {
-  pid_t pid;
-  struct bgjob_l* next;
+	pid_t pid;
+	struct bgjob_l* next;
 } bgjobL;
 
 /* the pids of the background processes */
@@ -107,7 +107,7 @@ IsBuiltIn(char*);
  * RunCmd
  *
  * arguments:
- *   commandT *cmd: the command to be run
+ *	 commandT *cmd: the command to be run
  *
  * returns: none
  *
@@ -116,7 +116,7 @@ IsBuiltIn(char*);
 void
 RunCmd(commandT* cmd)
 {
-  RunCmdFork(cmd, TRUE);
+	RunCmdFork(cmd, TRUE);
 } /* RunCmd */
 
 
@@ -124,8 +124,8 @@ RunCmd(commandT* cmd)
  * RunCmdFork
  *
  * arguments:
- *   commandT *cmd: the command to be run
- *   bool fork: whether to fork
+ *	 commandT *cmd: the command to be run
+ *	 bool fork: whether to fork
  *
  * returns: none
  *
@@ -135,16 +135,16 @@ RunCmd(commandT* cmd)
 void
 RunCmdFork(commandT* cmd, bool fork)
 {
-  if (cmd->argc <= 0)
-    return;
-  if (IsBuiltIn(cmd->argv[0]))
-    {
-      RunBuiltInCmd(cmd);
-    }
-  else
-    {
-      RunExternalCmd(cmd, fork);
-    }
+	if (cmd->argc <= 0)
+		return;
+	if (IsBuiltIn(cmd->argv[0]))
+		{
+			RunBuiltInCmd(cmd);
+		}
+	else
+		{
+			RunExternalCmd(cmd, fork);
+		}
 } /* RunCmdFork */
 
 
@@ -152,7 +152,7 @@ RunCmdFork(commandT* cmd, bool fork)
  * RunCmdBg
  *
  * arguments:
- *   commandT *cmd: the command to be run
+ *	 commandT *cmd: the command to be run
  *
  * returns: none
  *
@@ -161,7 +161,7 @@ RunCmdFork(commandT* cmd, bool fork)
 void
 RunCmdBg(commandT* cmd)
 {
-  // TODO
+	// TODO
 } /* RunCmdBg */
 
 
@@ -169,8 +169,8 @@ RunCmdBg(commandT* cmd)
  * RunCmdPipe
  *
  * arguments:
- *   commandT *cmd1: the commandT struct for the left hand side of the pipe
- *   commandT *cmd2: the commandT struct for the right hand side of the pipe
+ *	 commandT *cmd1: the commandT struct for the left hand side of the pipe
+ *	 commandT *cmd2: the commandT struct for the right hand side of the pipe
  *
  * returns: none
  *
@@ -187,8 +187,8 @@ RunCmdPipe(commandT* cmd1, commandT* cmd2)
  * RunCmdRedirOut
  *
  * arguments:
- *   commandT *cmd: the command to be run
- *   char *file: the file to be used for standard output
+ *	 commandT *cmd: the command to be run
+ *	 char *file: the file to be used for standard output
  *
  * returns: none
  *
@@ -204,8 +204,8 @@ RunCmdRedirOut(commandT* cmd, char* file)
  * RunCmdRedirIn
  *
  * arguments:
- *   commandT *cmd: the command to be run
- *   char *file: the file to be used for standard input
+ *	 commandT *cmd: the command to be run
+ *	 char *file: the file to be used for standard input
  *
  * returns: none
  *
@@ -214,15 +214,15 @@ RunCmdRedirOut(commandT* cmd, char* file)
 void
 RunCmdRedirIn(commandT* cmd, char* file)
 {
-}  /* RunCmdRedirIn */
+}	/* RunCmdRedirIn */
 
 
 /*
  * RunExternalCmd
  *
  * arguments:
- *   commandT *cmd: the command to be run
- *   bool fork: whether to fork
+ *	 commandT *cmd: the command to be run
+ *	 bool fork: whether to fork
  *
  * returns: none
  *
@@ -231,16 +231,16 @@ RunCmdRedirIn(commandT* cmd, char* file)
 static void
 RunExternalCmd(commandT* cmd, bool fork)
 {
-  if (ResolveExternalCmd(cmd))
-    Exec(cmd, fork);
-}  /* RunExternalCmd */
+	if (ResolveExternalCmd(cmd))
+		Exec(cmd, fork);
+}	/* RunExternalCmd */
 
 
 /*
  * ResolveExternalCmd
  *
  * arguments:
- *   commandT *cmd: the command to be run
+ *	 commandT *cmd: the command to be run
  *
  * returns: bool: whether the given command exists
  *
@@ -249,7 +249,7 @@ RunExternalCmd(commandT* cmd, bool fork)
 static bool
 ResolveExternalCmd(commandT* cmd)
 {
-  return FALSE;
+	return FALSE;
 } /* ResolveExternalCmd */
 
 
@@ -257,8 +257,8 @@ ResolveExternalCmd(commandT* cmd)
  * Exec
  *
  * arguments:
- *   commandT *cmd: the command to be run
- *   bool forceFork: whether to fork
+ *	 commandT *cmd: the command to be run
+ *	 bool forceFork: whether to fork
  *
  * returns: none
  *
@@ -274,10 +274,10 @@ Exec(commandT* cmd, bool forceFork)
  * IsBuiltIn
  *
  * arguments:
- *   char *cmd: a command string (e.g. the first token of the command line)
+ *	 char *cmd: a command string (e.g. the first token of the command line)
  *
  * returns: bool: TRUE if the command string corresponds to a built-in
- *                command, else FALSE.
+ *								command, else FALSE.
  *
  * Checks whether the given string corresponds to a supported built-in
  * command.
@@ -285,7 +285,7 @@ Exec(commandT* cmd, bool forceFork)
 static bool
 IsBuiltIn(char* cmd)
 {
-  return FALSE;
+	return FALSE;
 } /* IsBuiltIn */
 
 
@@ -293,7 +293,7 @@ IsBuiltIn(char* cmd)
  * RunBuiltInCmd
  *
  * arguments:
- *   commandT *cmd: the command to be run
+ *	 commandT *cmd: the command to be run
  *
  * returns: none
  *

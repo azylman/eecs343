@@ -1,37 +1,37 @@
 /***************************************************************************
- *  Title: Input/Output 
+ *	Title: Input/Output 
  * -------------------------------------------------------------------------
- *    Purpose: Handles the input and output
- *    Author: Stefan Birrer
- *    Version: $Revision: 1.3 $
- *    Last Modification: $Date: 2009/10/12 20:50:12 $
- *    File: $RCSfile: io.c,v $
- *    Copyright: (C) 2002 by Stefan Birrer
+ *		Purpose: Handles the input and output
+ *		Author: Stefan Birrer
+ *		Version: $Revision: 1.3 $
+ *		Last Modification: $Date: 2009/10/12 20:50:12 $
+ *		File: $RCSfile: io.c,v $
+ *		Copyright: (C) 2002 by Stefan Birrer
  ***************************************************************************/
 /***************************************************************************
- *  ChangeLog:
+ *	ChangeLog:
  * -------------------------------------------------------------------------
- *    $Log: io.c,v $
- *    Revision 1.3  2009/10/12 20:50:12  jot836
- *    Commented tsh C files
+ *		$Log: io.c,v $
+ *		Revision 1.3	2009/10/12 20:50:12	jot836
+ *		Commented tsh C files
  *
- *    Revision 1.2  2009/10/11 04:45:50  npb853
- *    Changing the identation of the project to be GNU.
+ *		Revision 1.2	2009/10/11 04:45:50	npb853
+ *		Changing the identation of the project to be GNU.
  *
- *    Revision 1.1  2005/10/13 05:24:59  sbirrer
- *    - added the skeleton files
+ *		Revision 1.1	2005/10/13 05:24:59	sbirrer
+ *		- added the skeleton files
  *
- *    Revision 1.4  2002/10/24 21:32:47  sempi
- *    final release
+ *		Revision 1.4	2002/10/24 21:32:47	sempi
+ *		final release
  *
- *    Revision 1.3  2002/10/23 21:54:27  sempi
- *    beta release
+ *		Revision 1.3	2002/10/23 21:54:27	sempi
+ *		beta release
  *
- *    Revision 1.2  2002/10/15 20:37:26  sempi
- *    Comments updated
+ *		Revision 1.2	2002/10/15 20:37:26	sempi
+ *		Comments updated
  *
- *    Revision 1.1  2002/10/15 20:20:56  sempi
- *    Milestone 1
+ *		Revision 1.1	2002/10/15 20:20:56	sempi
+ *		Milestone 1
  *
  ***************************************************************************/
 #define __IO_IMPL__
@@ -50,15 +50,15 @@
 #include "runtime.h"
 
 /************Defines and Typedefs*****************************************/
-/*  #defines and typedefs should have their names in all caps.
- *  Global variables begin with g. Global constants with k. Local
- *  variables should be in all lower case. When initializing
- *  structures and arrays, line everything up in neat columns.
+/*	#defines and typedefs should have their names in all caps.
+ *	Global variables begin with g. Global constants with k. Local
+ *	variables should be in all lower case. When initializing
+ *	structures and arrays, line everything up in neat columns.
  */
 
 /************Global Variables*********************************************/
 
-/* indicates that the standard input stream is currently read  */
+/* indicates that the standard input stream is currently read	*/
 bool isReading = FALSE;
 
 /************Function Prototypes******************************************/
@@ -80,7 +80,7 @@ bool isReading = FALSE;
 void
 PrintNewline()
 {
-  putchar('\n');
+	putchar('\n');
 } /* PrintNewLine */
 
 
@@ -88,7 +88,7 @@ PrintNewline()
  * Print
  *
  * arguments:
- *   char *msg: a null-terminated string to be written to standard output
+ *	 char *msg: a null-terminated string to be written to standard output
  *
  * returns: none
  *
@@ -97,8 +97,8 @@ PrintNewline()
 void
 Print(char* msg)
 {
-  assert(msg != NULL);
-  puts(msg);
+	assert(msg != NULL);
+	puts(msg);
 } /* Print */
 
 
@@ -106,7 +106,7 @@ Print(char* msg)
  * PrintPError
  *
  * arguments:
- *   char *msg: the error to be printed
+ *	 char *msg: the error to be printed
  *
  * returns: none
  *
@@ -115,15 +115,15 @@ Print(char* msg)
 void
 PrintPError(char* msg)
 {
-  char* format = "%s: %s";
-  char str[MAXLINE];
-  if (msg == NULL)
-    {
-      perror(SHELLNAME);
-      return;
-    }
-  snprintf(str, MAXLINE - 1, format, SHELLNAME, msg);
-  perror(str);
+	char* format = "%s: %s";
+	char str[MAXLINE];
+	if (msg == NULL)
+		{
+			perror(SHELLNAME);
+			return;
+		}
+	snprintf(str, MAXLINE - 1, format, SHELLNAME, msg);
+	perror(str);
 } /* PrintPError */
 
 
@@ -139,7 +139,7 @@ PrintPError(char* msg)
 bool
 IsReading()
 {
-  return isReading;
+	return isReading;
 } /* IsReading */
 
 
@@ -147,9 +147,9 @@ IsReading()
  * getCommandLine
  *
  * arguments:
- *   char **buf: pointer to a pointer to memory allocated for reading
-                 from stdin
- *   int size: bytes allocated at *buf
+ *	 char **buf: pointer to a pointer to memory allocated for reading
+								 from stdin
+ *	 int size: bytes allocated at *buf
  *
  * returns: none
  *
@@ -159,22 +159,22 @@ IsReading()
 void
 getCommandLine(char** buf, int size)
 {
-  char ch;
-  size_t used = 0;
-  char* cmd = *buf;
-  cmd[0] = '\0';
+	char ch;
+	size_t used = 0;
+	char* cmd = *buf;
+	cmd[0] = '\0';
 
-  isReading = TRUE;
-  while (((ch = getc(stdin)) != EOF) && (ch != '\n'))
-    {
-      if (used == size)
-        {
-          size *= 2;
-          cmd = realloc(cmd, sizeof(char) * (size + 1));
-        }
-      cmd[used] = ch;
-      used++;
-      cmd[used] = '\0';
-    }
-  isReading = FALSE;
+	isReading = TRUE;
+	while (((ch = getc(stdin)) != EOF) && (ch != '\n'))
+		{
+			if (used == size)
+				{
+					size *= 2;
+					cmd = realloc(cmd, sizeof(char) * (size + 1));
+				}
+			cmd[used] = ch;
+			used++;
+			cmd[used] = '\0';
+		}
+	isReading = FALSE;
 } /* getCommandLine */
