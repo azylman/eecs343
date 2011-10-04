@@ -103,6 +103,8 @@ int
 fileExists(const char * filename);
 char*
 getFullPath(char * filename);
+void
+convertFirstArgToCommandName(commandT* cmd);
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
@@ -268,18 +270,24 @@ ResolveExternalCmd(commandT* cmd) {
 static void
 Exec(commandT* cmd, bool forceFork) {
 	int cpid;
-	int ppid = getpid();
 	
 	if(!forceFork) {
-	
+		// Stuff here later on for dealing with things that aren't force-forked.
 	} else {
 		if ((cpid = fork()) < 0){
 			perror("fork failed");
 		} else {
-			if (cpid == 0) {
-				printf("I am %d the child of %d\n", getpid(), ppid);
-			} else { /* parent */
-				printf("I am %d, the parent of %d\n", ppid, cpid);
+			if (cpid == 0) { // child
+				printf("Command name: %s\n", cmd->argv[0]);
+				convertFirstArgToCommandName(cmd);
+				printf("Command name: %s\n", cmd->argv[0]);
+				execv(cmd->name, cmd->argv);
+				perror("exec failed");
+			} else { // parent
+				int* our_loc = malloc(sizeof(int));
+				int* stat = our_loc;
+				wait(stat);
+				free(our_loc);
 			}
 		}
 	}
@@ -288,7 +296,25 @@ Exec(commandT* cmd, bool forceFork) {
 } /* Exec */
 
 
-char* getCommandName(char* 
+void convertFirstArgToCommandName(commandT* cmd) {
+	char* command = cmd->argv[0];
+	
+	int starting = 0;
+	int i;
+	for (i = strlen(command); i >= 0; --i) {
+		if (command[i] == '/') {
+			starting = i;
+			break;
+		}
+	}
+	
+	if (starting != 0) {
+		char* commandName = malloc((strlen(command) - starting + 1) * sizeof(char));
+		memcpy(commandName, command + (starting + 1) * sizeof(char), (starting + 1) * sizeof(char));
+		free(cmd->argv[0]);
+		cmd->argv[0] = commandName;
+	}
+}
 
 /*
  * IsBuiltIn
