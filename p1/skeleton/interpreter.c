@@ -101,53 +101,7 @@ Interpret(char* cmdLine)
 	char* paths = getenv("PATH");
 	char* home = getenv("HOME");
 	
-	// If the file name is an absolute path.
-	if (cmd->name[0] == '/') {
-		// Just look it up based on the provided path.
-		if (fileExists(cmd->name)) {
-			printf("Found %s absolutely\n", cmd->name);
-		}
-	} else {
-		// Otherwise see if it exists in the home directory.
-		char* homePath = malloc(MAXPATHLEN*sizeof(char*));
-		strcpy(homePath, home);
-		strcat(homePath, "/");
-		strcat(homePath, cmd->name);
-		if (fileExists(homePath)) {
-			printf("Found %s in home directory\n", homePath);
-		} else {
-			// Otherwise see if it exists in the current directory.
-			char* workingDir = getCurrentWorkingDir();
-			char* fullWorkingDir = malloc(MAXPATHLEN*sizeof(char*));
-			strcpy(fullWorkingDir, workingDir);
-			strcat(fullWorkingDir, "/");
-			strcat(fullWorkingDir, cmd->name);
-			if (fileExists(fullWorkingDir)) {
-				printf("Found %s in current directory\n", fullWorkingDir);
-			} else {
-				// Otherwise see if it exists in any of the folders in our path.
-				char* pathCopy = malloc(MAXPATHLEN*sizeof(char*));
-				strcpy(pathCopy, paths);
-				char* path = strtok(pathCopy, ":");
-				while (path != NULL) {
-					char* fullPath = malloc(MAXPATHLEN*sizeof(char*));
-					strcpy(fullPath, path);
-					strcat(fullPath, "/");
-					strcat(fullPath, cmd->name);
-					if (fileExists(fullPath)) {
-						printf("Found %s in PATH\n", fullPath);
-						break;
-					}
-					path = strtok(NULL, ":");
-					free(fullPath);
-				}
-				free(pathCopy);
-			}
-			free(fullWorkingDir);
-			free(workingDir);
-		}
-		free(homePath);
-	}
+	char* path = getFullPath(cmd->name);
 	
 	freeCommand(cmd);
 } /* Interpret */
@@ -335,4 +289,56 @@ int fileExists(const char * filename) {
 		return TRUE;
 	}
 	return FALSE;
+}
+
+char* getFullPath(char* cmdName) {
+
+	// If the file name is an absolute path.
+	if (cmd->name[0] == '/') {
+		// Just look it up based on the provided path.
+		if (fileExists(cmd->name)) {
+			return cmd->name;
+		}
+	} else {
+		// Otherwise see if it exists in the home directory.
+		char* homePath = malloc(MAXPATHLEN*sizeof(char*));
+		strcpy(homePath, home);
+		strcat(homePath, "/");
+		strcat(homePath, cmd->name);
+		if (fileExists(homePath)) {
+			return homePath;
+		} else {
+			// Otherwise see if it exists in the current directory.
+			char* workingDir = getCurrentWorkingDir();
+			char* fullWorkingDir = malloc(MAXPATHLEN*sizeof(char*));
+			strcpy(fullWorkingDir, workingDir);
+			strcat(fullWorkingDir, "/");
+			strcat(fullWorkingDir, cmd->name);
+			if (fileExists(fullWorkingDir)) {
+				return fullWorkingDir;
+			} else {
+				// Otherwise see if it exists in any of the folders in our path.
+				char* pathCopy = malloc(MAXPATHLEN*sizeof(char*));
+				strcpy(pathCopy, paths);
+				char* path = strtok(pathCopy, ":");
+				while (path != NULL) {
+					char* fullPath = malloc(MAXPATHLEN*sizeof(char*));
+					strcpy(fullPath, path);
+					strcat(fullPath, "/");
+					strcat(fullPath, cmd->name);
+					if (fileExists(fullPath)) {
+						return fullPath;
+					}
+					path = strtok(NULL, ":");
+					free(fullPath);
+				}
+				free(pathCopy);
+			}
+			free(fullWorkingDir);
+			free(workingDir);
+		}
+		free(homePath);
+	}
+	
+	return NULL;
 }
