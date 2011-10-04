@@ -278,7 +278,15 @@ Exec(commandT* cmd, bool forceFork) {
  */
 static bool
 IsBuiltIn(char* cmd) {
-	return FALSE;
+	if (strcmp(cmd, "echo") == 0 ||
+		strcmp(cmd, "exit") == 0 ||
+		strcmp(cmd, "cd") == 0 ||
+		strcmp(cmd, "INT") == 0 ||
+		strcmp(cmd, "SLEEP") == 0) {
+		return true;
+	}
+	
+	return false;
 } /* IsBuiltIn */
 
 
