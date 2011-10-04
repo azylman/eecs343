@@ -475,6 +475,7 @@ char* getFullPath(char* filename)  {
 	if (found) {
 		return result;
 	} else {
+		perror(filename);
 		return NULL;
 	}
 }
