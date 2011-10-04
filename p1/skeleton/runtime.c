@@ -99,6 +99,10 @@ RunBuiltInCmd(commandT*);
 /* checks whether a command is a builtin command */
 static bool
 IsBuiltIn(char*);
+int
+fileExists(const char * filename);
+char*
+getFullPath(char * filename);
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
@@ -324,4 +328,74 @@ char*
 getCurrentWorkingDir() {
 	char* path = malloc(MAXPATHLEN*sizeof(char*));
 	return getcwd(path, MAXPATHLEN);
+}
+
+/*
+ * fileExists
+ *
+ * arguments:
+ *   char* filename: file to check if it exists
+ */
+int fileExists(const char * filename) {
+	FILE* file;
+	if ((file = fopen(filename, "r"))) {
+		fclose(file);
+		return TRUE;
+	}
+	return FALSE;
+}
+
+char* getFullPath(char* filename)  {
+
+	char* paths = getenv("PATH");
+
+	// If the file name is an absolute path.
+	if (filename[0] == '/') {
+		// Just look it up based on the provided path.
+		if (fileExists(filename)) {
+			return filename;
+		}
+	} else {
+		// Otherwise see if it exists in the home directory.
+		char* home = getenv("HOME");
+		char* homePath = malloc(MAXPATHLEN*sizeof(char*));
+		strcpy(homePath, home);
+		strcat(homePath, "/");
+		strcat(homePath, filename);
+		if (fileExists(homePath)) {
+			return homePath;
+		} else {
+			// Otherwise see if it exists in the current directory.
+			char* workingDir = getCurrentWorkingDir();
+			char* fullWorkingDir = malloc(MAXPATHLEN*sizeof(char*));
+			strcpy(fullWorkingDir, workingDir);
+			strcat(fullWorkingDir, "/");
+			strcat(fullWorkingDir, filename);
+			if (fileExists(fullWorkingDir)) {
+				return fullWorkingDir;
+			} else {
+				// Otherwise see if it exists in any of the folders in our path.
+				char* pathCopy = malloc(MAXPATHLEN*sizeof(char*));
+				strcpy(pathCopy, paths);
+				char* path = strtok(pathCopy, ":");
+				while (path != NULL) {
+					char* fullPath = malloc(MAXPATHLEN*sizeof(char*));
+					strcpy(fullPath, path);
+					strcat(fullPath, "/");
+					strcat(fullPath, filename);
+					if (fileExists(fullPath)) {
+						return fullPath;
+					}
+					path = strtok(NULL, ":");
+					free(fullPath);
+				}
+				free(pathCopy);
+			}
+			free(fullWorkingDir);
+			free(workingDir);
+		}
+		free(homePath);
+	}
+	
+	return NULL;
 }
