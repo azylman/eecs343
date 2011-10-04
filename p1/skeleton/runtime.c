@@ -244,6 +244,12 @@ RunExternalCmd(commandT* cmd, bool fork) {
  */
 static bool
 ResolveExternalCmd(commandT* cmd) {
+	char* fullPath = getFullPath(cmd->name);
+	
+	if (fullPath != NULL) {
+		cmd->name = fullPath;
+		return TRUE;
+	}
 	return FALSE;
 } /* ResolveExternalCmd */
 
