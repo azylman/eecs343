@@ -267,24 +267,28 @@ ResolveExternalCmd(commandT* cmd) {
  */
 static void
 Exec(commandT* cmd, bool forceFork) {
-	int pid;
+	int cpid;
 	int ppid = getpid();
 	
 	if(!forceFork) {
 	
 	} else {
-		if ((pid = fork()) < 0){
+		if ((cpid = fork()) < 0){
 			perror("fork failed");
 		} else {
-			if (pid == 0) {
+			if (cpid == 0) {
 				printf("I am %d the child of %d\n", getpid(), ppid);
 			} else { /* parent */
-				printf("I am %d, the parent of %d\n", ppid, pid);
+				printf("I am %d, the parent of %d\n", ppid, cpid);
 			}
 		}
 	}
+	
+	free(cmd->name);
 } /* Exec */
 
+
+char* getCommandName(char* 
 
 /*
  * IsBuiltIn
