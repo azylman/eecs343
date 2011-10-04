@@ -4,7 +4,6 @@ TEST="$1"
 
 echo "Actual output:\n---------------------------------"
 ./sdriver.pl -t test$TEST.in -s ../tsh
-echo "\n"
 echo "Predictied output:\n---------------------------------"
 ./sdriver.pl -t test$TEST.in -s ./tsh-ref
 

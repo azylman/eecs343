@@ -279,13 +279,16 @@ Exec(commandT* cmd, bool forceFork) {
 			perror("fork failed");
 		} else {
 			if (cpid == 0) { // child
+				setpgid(0, 0);
 				convertFirstArgToCommandName(cmd);
 				execv(cmd->name, cmd->argv);
 				perror("exec failed");
 			} else { // parent
+				fgCid = cpid;
 				int* our_loc = malloc(sizeof(int));
 				int* stat = our_loc;
-				wait(stat);
+				waitpid(cpid, stat, 0);
+				fgCid = 0;
 				free(our_loc);
 			}
 		}

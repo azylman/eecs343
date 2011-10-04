@@ -71,6 +71,9 @@ typedef struct command_t {
  ***********************************************************************/
 VAREXTERN(bool forceExit, FALSE);
 
+// The pid of a foreground child (0 means no child);
+VAREXTERN(int fgCid, 0);
+
 /************Function Prototypes******************************************/
 
 /***********************************************************************

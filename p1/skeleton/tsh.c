@@ -15,6 +15,7 @@
 #include <stdlib.h>
 #include <signal.h>
 #include <string.h>
+#include <unistd.h>
 
 /************Private include**********************************************/
 #include "tsh.h"
@@ -79,6 +80,8 @@ int main(int argc, char *argv[])
 			forceExit = TRUE;
 	}
 
+	
+	
 	/* shell termination */
 	free(cmdLine);
 	return 0;
@@ -95,6 +98,10 @@ int main(int argc, char *argv[])
  * This should handle signals sent to tsh.
  */
 static void
-sig(int signo)
-{
+sig(int signo) {
+	if (fgCid != 0) {
+		kill(fgCid, SIGINT);
+	} else {
+		exit(1);
+	}
 } /* sig */
