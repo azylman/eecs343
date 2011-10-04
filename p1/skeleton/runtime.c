@@ -283,10 +283,10 @@ IsBuiltIn(char* cmd) {
 		strcmp(cmd, "cd") == 0 ||
 		strcmp(cmd, "INT") == 0 ||
 		strcmp(cmd, "SLEEP") == 0) {
-		return true;
+		return TRUE;
 	}
 	
-	return false;
+	return FALSE;
 } /* IsBuiltIn */
 
 
@@ -316,17 +316,21 @@ RunBuiltInCmd(commandT* cmd) {
 	}
 	
 	if (strcmp(cmd->name, "cd") == 0) {
-		chdir(cmd->argv[1]);
+		int res = chdir(cmd->argv[1]);
+		// 0: success, -1: failure
+		if (res != 0) {
+			printf("Error: %s: invalid path", cmd->argv[1]);
+		}
 		return;
 	}
 	
 	if (strcmp(cmd->name, "INT") == 0) {
-		// Do something
+		// Do something.
 		return;
 	}
 	
 	if (strcmp(cmd->name, "SLEEP") == 0) {
-		// Do something
+		// Do something.
 		return;
 	}
 } /* RunBuiltInCmd */
