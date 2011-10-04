@@ -334,12 +334,15 @@ int fileExists(const char * filename) {
 char* getFullPath(char* filename)  {
 
 	char* paths = getenv("PATH");
+	char* result = malloc(MAXPATHLEN*sizeof(char*));
+	bool found = FALSE;
 
 	// If the file name is an absolute path.
 	if (filename[0] == '/') {
 		// Just look it up based on the provided path.
 		if (fileExists(filename)) {
-			return filename;
+			strcpy(result, filename);
+			found = TRUE;
 		}
 	} else {
 		// Otherwise see if it exists in the home directory.
@@ -349,7 +352,8 @@ char* getFullPath(char* filename)  {
 		strcat(homePath, "/");
 		strcat(homePath, filename);
 		if (fileExists(homePath)) {
-			return homePath;
+			strcpy(result, homePath);
+			found = TRUE;
 		} else {
 			// Otherwise see if it exists in the current directory.
 			char* workingDir = getCurrentWorkingDir();
@@ -358,7 +362,8 @@ char* getFullPath(char* filename)  {
 			strcat(fullWorkingDir, "/");
 			strcat(fullWorkingDir, filename);
 			if (fileExists(fullWorkingDir)) {
-				return fullWorkingDir;
+				strcpy(result, fullWorkingDir);
+				found = TRUE;
 			} else {
 				// Otherwise see if it exists in any of the folders in our path.
 				char* pathCopy = malloc(MAXPATHLEN*sizeof(char*));
@@ -370,7 +375,8 @@ char* getFullPath(char* filename)  {
 					strcat(fullPath, "/");
 					strcat(fullPath, filename);
 					if (fileExists(fullPath)) {
-						return fullPath;
+						strcpy(result, fullPath);
+						found = TRUE;
 					}
 					path = strtok(NULL, ":");
 					free(fullPath);
@@ -383,5 +389,9 @@ char* getFullPath(char* filename)  {
 		free(homePath);
 	}
 	
-	return NULL;
+	if (found) {
+		return result;
+	} else {
+		return NULL;
+	}
 }
