@@ -302,6 +302,33 @@ IsBuiltIn(char* cmd) {
  */
 static void
 RunBuiltInCmd(commandT* cmd) {
+	if (strcmp(cmd->name, "echo") == 0) {
+		int i;
+		for (i = 1; i < cmd->argc; ++i) {
+			printf("%s ", cmd->argv[i]);
+		}
+		printf("\n");
+		return;
+	}
+	
+	if (strcmp(cmd->name, "exit") == 0) {
+		return;
+	}
+	
+	if (strcmp(cmd->name, "cd") == 0) {
+		chdir(cmd->argv[1]);
+		return;
+	}
+	
+	if (strcmp(cmd->name, "INT") == 0) {
+		// Do something
+		return;
+	}
+	
+	if (strcmp(cmd->name, "SLEEP") == 0) {
+		// Do something
+		return;
+	}
 } /* RunBuiltInCmd */
 
 
