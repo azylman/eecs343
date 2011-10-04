@@ -76,6 +76,9 @@ getCommand(char* cmdLine);
 void
 freeCommand(commandT* cmd);
 
+int
+fileExists(const char * filename);
+
 /**************Implementation***********************************************/
 
 
@@ -93,14 +96,41 @@ freeCommand(commandT* cmd);
 void
 Interpret(char* cmdLine)
 {
-	int i = 0;
 	commandT* cmd = getCommand(cmdLine);
+	char* paths = getenv("PATH");
 
+	/*
+	int i = 0;
 	printf("argc: %d\n", cmd->argc);
 	for (i = 0; cmd->argv[i] != 0; i++)
 		{
 			printf("#%d|%s|\n", i, cmd->argv[i]);
+		}*/
+	
+	// If file name is already a valid path (either in cwd or absolute)
+	if (fileExists(cmd->name)) {
+		// If the first character is a slash, print cmd->name
+		// Else print cwd+name
+		printf("Found locally or absolutely");
+	} else {
+		// Check fileExists(folderinPath+name)
+		char* pathCopy = malloc(2*sizeof(paths)*sizeof(char*));
+		strcpy(pathCopy, paths);
+		char* path = strtok(pathCopy, ":");
+		while (path != NULL) {
+			char* fullPath = malloc(2*sizeof(path) + 2*sizeof(cmd->name));
+			strcpy(fullPath, path);
+			strcat(fullPath, "/");
+			strcat(fullPath, cmd->name);
+			if (fileExists(fullPath)) {
+				printf("Found in path at %s\n", fullPath);
+				break;
+			}
+			path = strtok(NULL, ":");
+			free(fullPath);
 		}
+		free(pathCopy);
+	}
 	
 	freeCommand(cmd);
 } /* Interpret */
@@ -274,3 +304,18 @@ freeCommand(commandT* cmd)
 		}
 	free(cmd);
 } /* freeCommand */
+
+/*
+ * fileExists
+ *
+ * arguments:
+ *   char* filename: file to check if it exists
+ */
+int fileExists(const char * filename) {
+	FILE* file;
+	if ((file = fopen(filename, "r"))) {
+		fclose(file);
+		return TRUE;
+	}
+	return FALSE;
+}
