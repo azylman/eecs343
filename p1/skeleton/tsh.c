@@ -65,7 +65,6 @@ int main(int argc, char *argv[])
 		PrintPError("SIGTSTP");
 
 	while (!forceExit) /* repeat forever */ {
-		printf("tsh> ");
 		/* read command line */
 		getCommandLine(&cmdLine, BUFSIZE);
 

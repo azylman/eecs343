@@ -278,9 +278,7 @@ Exec(commandT* cmd, bool forceFork) {
 			perror("fork failed");
 		} else {
 			if (cpid == 0) { // child
-				printf("Command name: %s\n", cmd->argv[0]);
 				convertFirstArgToCommandName(cmd);
-				printf("Command name: %s\n", cmd->argv[0]);
 				execv(cmd->name, cmd->argv);
 				perror("exec failed");
 			} else { // parent
@@ -299,7 +297,7 @@ Exec(commandT* cmd, bool forceFork) {
 void convertFirstArgToCommandName(commandT* cmd) {
 	char* command = cmd->argv[0];
 	
-	int starting = 0;
+	int starting = -1;
 	int i;
 	for (i = strlen(command); i >= 0; --i) {
 		if (command[i] == '/') {
@@ -308,9 +306,9 @@ void convertFirstArgToCommandName(commandT* cmd) {
 		}
 	}
 	
-	if (starting != 0) {
+	if (starting != -1) {
 		char* commandName = malloc((strlen(command) - starting + 1) * sizeof(char));
-		memcpy(commandName, command + (starting + 1) * sizeof(char), (starting + 1) * sizeof(char));
+		memcpy(commandName, command + (starting + 1) * sizeof(char), (strlen(command) - starting + 1) * sizeof(char));
 		free(cmd->argv[0]);
 		cmd->argv[0] = commandName;
 	}
