@@ -280,9 +280,7 @@ static bool
 IsBuiltIn(char* cmd) {
 	if (strcmp(cmd, "echo") == 0 ||
 		strcmp(cmd, "exit") == 0 ||
-		strcmp(cmd, "cd") == 0 ||
-		strcmp(cmd, "INT") == 0 ||
-		strcmp(cmd, "SLEEP") == 0) {
+		strcmp(cmd, "cd") == 0) {
 		return TRUE;
 	}
 	
@@ -321,16 +319,6 @@ RunBuiltInCmd(commandT* cmd) {
 		if (res != 0) {
 			printf("Error: %s: invalid path", cmd->argv[1]);
 		}
-		return;
-	}
-	
-	if (strcmp(cmd->name, "INT") == 0) {
-		// Do something.
-		return;
-	}
-	
-	if (strcmp(cmd->name, "SLEEP") == 0) {
-		// Do something.
 		return;
 	}
 } /* RunBuiltInCmd */
