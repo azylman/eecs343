@@ -46,6 +46,7 @@
 #include <assert.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <sys/param.h>
 #include "string.h"
 
 /************Private include**********************************************/
@@ -100,35 +101,50 @@ Interpret(char* cmdLine)
 	char* paths = getenv("PATH");
 	char* home = getenv("HOME");
 	
-	// If file name is already a valid path (either in cwd or absolute)
+	// If the file name is an absolute path.
 	if (cmd->name[0] == '/') {
+		// Just look it up based on the provided path.
 		if (fileExists(cmd->name)) {
 			printf("Found %s absolutely\n", cmd->name);
 		}
 	} else {
-		char* homePath = malloc(2*sizeof(home) + 2*sizeof(cmd->name));
+		// Otherwise see if it exists in the home directory.
+		char* homePath = malloc(MAXPATHLEN*sizeof(char*));
 		strcpy(homePath, home);
 		strcat(homePath, "/");
 		strcat(homePath, cmd->name);
 		if (fileExists(homePath)) {
 			printf("Found %s in home directory\n", homePath);
 		} else {
-			char* pathCopy = malloc(2*sizeof(paths)*sizeof(char*));
-			strcpy(pathCopy, paths);
-			char* path = strtok(pathCopy, ":");
-			while (path != NULL) {
-				char* fullPath = malloc(2*sizeof(path) + 2*sizeof(cmd->name));
-				strcpy(fullPath, path);
-				strcat(fullPath, "/");
-				strcat(fullPath, cmd->name);
-				if (fileExists(fullPath)) {
-					printf("Found %s in PATH\n", fullPath);
-					break;
+			// Otherwise see if it exists in the current directory.
+			char* workingDir = getCurrentWorkingDir();
+			char* fullWorkingDir = malloc(MAXPATHLEN*sizeof(char*));
+			strcpy(fullWorkingDir, workingDir);
+			strcat(fullWorkingDir, "/");
+			strcat(fullWorkingDir, cmd->name);
+			if (fileExists(fullWorkingDir)) {
+				printf("Found %s in current directory\n", fullWorkingDir);
+			} else {
+				// Otherwise see if it exists in any of the folders in our path.
+				char* pathCopy = malloc(MAXPATHLEN*sizeof(char*));
+				strcpy(pathCopy, paths);
+				char* path = strtok(pathCopy, ":");
+				while (path != NULL) {
+					char* fullPath = malloc(MAXPATHLEN*sizeof(char*));
+					strcpy(fullPath, path);
+					strcat(fullPath, "/");
+					strcat(fullPath, cmd->name);
+					if (fileExists(fullPath)) {
+						printf("Found %s in PATH\n", fullPath);
+						break;
+					}
+					path = strtok(NULL, ":");
+					free(fullPath);
 				}
-				path = strtok(NULL, ":");
-				free(fullPath);
+				free(pathCopy);
 			}
-			free(pathCopy);
+			free(fullWorkingDir);
+			free(workingDir);
 		}
 		free(homePath);
 	}
