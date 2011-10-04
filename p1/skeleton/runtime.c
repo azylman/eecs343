@@ -310,6 +310,7 @@ RunBuiltInCmd(commandT* cmd) {
 	}
 	
 	if (strcmp(cmd->name, "exit") == 0) {
+		printf("\n");
 		return;
 	}
 	
