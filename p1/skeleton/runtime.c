@@ -250,6 +250,7 @@ ResolveExternalCmd(commandT* cmd) {
 	
 	if (fullPath != NULL) {
 		cmd->name = fullPath;
+		
 		return TRUE;
 	}
 	return FALSE;
@@ -360,15 +361,19 @@ RunBuiltInCmd(commandT* cmd) {
 	}
 	
 	if (strcmp(cmd->name, "exit") == 0) {
-		printf("\n");
 		return;
 	}
 	
 	if (strcmp(cmd->name, "cd") == 0) {
-		int res = chdir(cmd->argv[1]);
+		int res = 0;
+		if (cmd->argc > 1) {
+			res = chdir(cmd->argv[1]);
+		} else {
+			res = chdir(getenv("HOME"));
+		}
 		// 0: success, -1: failure
 		if (res != 0) {
-			printf("Error: %s: invalid path", cmd->argv[1]);
+			perror("cd failed");
 		}
 		return;
 	}
