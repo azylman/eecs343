@@ -119,8 +119,7 @@ getFullPath(char * filename);
  * Runs the given command.
  */
 void
-RunCmd(commandT* cmd)
-{
+RunCmd(commandT* cmd) {
 	RunCmdFork(cmd, TRUE);
 } /* RunCmd */
 
@@ -138,18 +137,15 @@ RunCmd(commandT* cmd)
  * depending on cmd->argv[0].
  */
 void
-RunCmdFork(commandT* cmd, bool fork)
-{
+RunCmdFork(commandT* cmd, bool fork) {
 	if (cmd->argc <= 0)
 		return;
-	if (IsBuiltIn(cmd->argv[0]))
-		{
-			RunBuiltInCmd(cmd);
-		}
-	else
-		{
-			RunExternalCmd(cmd, fork);
-		}
+		
+	if (IsBuiltIn(cmd->argv[0])) {
+		RunBuiltInCmd(cmd);
+	} else {
+		RunExternalCmd(cmd, fork);
+	}
 } /* RunCmdFork */
 
 
@@ -164,8 +160,7 @@ RunCmdFork(commandT* cmd, bool fork)
  * Runs a command in the background.
  */
 void
-RunCmdBg(commandT* cmd)
-{
+RunCmdBg(commandT* cmd) {
 	// TODO
 } /* RunCmdBg */
 
@@ -183,8 +178,7 @@ RunCmdBg(commandT* cmd)
  * standard input on the second.
  */
 void
-RunCmdPipe(commandT* cmd1, commandT* cmd2)
-{
+RunCmdPipe(commandT* cmd1, commandT* cmd2) {
 } /* RunCmdPipe */
 
 
@@ -200,8 +194,7 @@ RunCmdPipe(commandT* cmd1, commandT* cmd2)
  * Runs a command, redirecting standard output to a file.
  */
 void
-RunCmdRedirOut(commandT* cmd, char* file)
-{
+RunCmdRedirOut(commandT* cmd, char* file) {
 } /* RunCmdRedirOut */
 
 
@@ -217,8 +210,7 @@ RunCmdRedirOut(commandT* cmd, char* file)
  * Runs a command, redirecting a file to standard input.
  */
 void
-RunCmdRedirIn(commandT* cmd, char* file)
-{
+RunCmdRedirIn(commandT* cmd, char* file) {
 }	/* RunCmdRedirIn */
 
 
@@ -234,8 +226,7 @@ RunCmdRedirIn(commandT* cmd, char* file)
  * Tries to run an external command.
  */
 static void
-RunExternalCmd(commandT* cmd, bool fork)
-{
+RunExternalCmd(commandT* cmd, bool fork) {
 	if (ResolveExternalCmd(cmd))
 		Exec(cmd, fork);
 }	/* RunExternalCmd */
@@ -252,8 +243,7 @@ RunExternalCmd(commandT* cmd, bool fork)
  * Determines whether the command to be run actually exists.
  */
 static bool
-ResolveExternalCmd(commandT* cmd)
-{
+ResolveExternalCmd(commandT* cmd) {
 	return FALSE;
 } /* ResolveExternalCmd */
 
@@ -270,8 +260,7 @@ ResolveExternalCmd(commandT* cmd)
  * Executes a command.
  */
 static void
-Exec(commandT* cmd, bool forceFork)
-{
+Exec(commandT* cmd, bool forceFork) {
 } /* Exec */
 
 
@@ -288,8 +277,7 @@ Exec(commandT* cmd, bool forceFork)
  * command.
  */
 static bool
-IsBuiltIn(char* cmd)
-{
+IsBuiltIn(char* cmd) {
 	return FALSE;
 } /* IsBuiltIn */
 
@@ -305,8 +293,7 @@ IsBuiltIn(char* cmd)
  * Runs a built-in command.
  */
 static void
-RunBuiltInCmd(commandT* cmd)
-{
+RunBuiltInCmd(commandT* cmd) {
 } /* RunBuiltInCmd */
 
 
@@ -320,8 +307,7 @@ RunBuiltInCmd(commandT* cmd)
  * Checks the status of running jobs.
  */
 void
-CheckJobs()
-{
+CheckJobs() {
 } /* CheckJobs */
 
 char*
