@@ -358,7 +358,20 @@ IsBuiltIn(char* cmd) {
 		return TRUE;
 	}
 	
-	return FALSE;
+	// Look for a VAR=var type of command.
+	int i;
+	bool foundEquals = FALSE;
+	for (i = 0; i < strlen(cmd); ++i) {
+		if (cmd[i] == ' ') {
+			return FALSE;
+		}
+		
+		if (cmd[i] == '=') {
+			foundEquals = TRUE;
+		}
+	}
+	
+	return foundEquals;
 } /* IsBuiltIn */
 
 
@@ -377,7 +390,15 @@ RunBuiltInCmd(commandT* cmd) {
 	if (strcmp(cmd->name, "echo") == 0) {
 		int i;
 		for (i = 1; i < cmd->argc; ++i) {
-			printf("%s ", cmd->argv[i]);
+			// If the parameter is not an environment variable
+			if (cmd->argv[i][0] != '$') {
+				printf("%s ", cmd->argv[i]);
+			} else {
+				char* varName = malloc(strlen(cmd->argv[i])*sizeof(char));
+				memcpy(varName, cmd->argv[i] + sizeof(char), strlen(cmd->argv[i]) * sizeof(char));
+				printf("%s ", getenv(varName));
+			}
+			
 		}
 		printf("\n");
 		return;
@@ -400,6 +421,31 @@ RunBuiltInCmd(commandT* cmd) {
 		}
 		return;
 	}
+	
+	if (strcmp(cmd->name, "script") == 0) {
+		// Do nothing.
+		return;
+	}
+	
+	// This is a VAR=var thing if we reach here.
+	int i;
+	int foundPos = -1;
+	for (i = 0; strlen(cmd->name); ++i) {
+		if (cmd->name[i] == '=') {
+			foundPos = i;
+			break;
+		}
+	}
+	
+	char* varName = malloc((foundPos + 1) * sizeof(char));
+	memcpy(varName, cmd->name, foundPos*sizeof(char));
+	varName[foundPos] = '\0';
+	char* var = malloc((strlen(cmd->name) - foundPos + 1) * sizeof(char));
+	memcpy(var, cmd->name + (foundPos + 1) * sizeof(char), (strlen(cmd->name) - foundPos + 1) * sizeof(char));
+	setenv(varName, var, 1);
+	free(varName);
+	free(var);
+	
 } /* RunBuiltInCmd */
 
 
