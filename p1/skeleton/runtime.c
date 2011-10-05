@@ -334,7 +334,8 @@ static bool
 IsBuiltIn(char* cmd) {
 	if (strcmp(cmd, "echo") == 0 ||
 		strcmp(cmd, "exit") == 0 ||
-		strcmp(cmd, "cd") == 0) {
+		strcmp(cmd, "cd") == 0 ||
+		strcmp(cmd, "script") == 0) {
 		return TRUE;
 	}
 	
