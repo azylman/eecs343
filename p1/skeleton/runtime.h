@@ -71,7 +71,12 @@ typedef struct command_t {
  ***********************************************************************/
 VAREXTERN(bool forceExit, FALSE);
 
-// The pid of a foreground child (0 means no child);
+/***********************************************************************
+ *	Title: Foreground child process id
+ * ---------------------------------------------------------------------
+ *		Purpose: Keeps track of the pid of the foreground child, or
+				 0 if there is no foreground child.
+ ***********************************************************************/
 VAREXTERN(int fgCid, 0);
 
 /************Function Prototypes******************************************/

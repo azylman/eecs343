@@ -99,10 +99,13 @@ RunBuiltInCmd(commandT*);
 /* checks whether a command is a builtin command */
 static bool
 IsBuiltIn(char*);
-int
+/* checks whether a given file path exists */
+static int
 fileExists(const char * filename);
+/* returns the full filepath for a given file name */
 char*
 getFullPath(char * filename);
+/* converts argv[0] of a command to just the command name (e.g. /bin/ls -> ls) */
 void
 convertFirstArgToCommandName(commandT* cmd);
 /************External Declaration*****************************************/
@@ -298,6 +301,22 @@ Exec(commandT* cmd, bool forceFork) {
 } /* Exec */
 
 
+/*
+ * convertFirstArgToCommandName
+ *
+ * arguments:
+ *   commandT* cmd: command to convert
+ *
+ * returns: none
+ *
+ * Converts the first element in the argument matrix (argv[0]) from
+ * a command path to just the name of the command.
+ *
+ * e.g:
+ * 	/bin/ls -> ls
+ *	ls -> ls
+ *	/trol -> trol
+ */
 void convertFirstArgToCommandName(commandT* cmd) {
 	char* command = cmd->argv[0];
 	
@@ -418,6 +437,12 @@ int fileExists(const char * filename) {
 	return FALSE;
 }
 
+/*
+ * getFullPath
+ *
+ * arguments:
+ *   char* filename: file to look up the full path for
+ */
 char* getFullPath(char* filename)  {
 
 	char* paths = getenv("PATH");
