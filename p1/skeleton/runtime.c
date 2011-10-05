@@ -253,6 +253,8 @@ ResolveExternalCmd(commandT* cmd) {
 		
 		return TRUE;
 	}
+	
+	free(fullPath);
 	return FALSE;
 } /* ResolveExternalCmd */
 
@@ -285,11 +287,9 @@ Exec(commandT* cmd, bool forceFork) {
 				perror("exec failed");
 			} else { // parent
 				fgCid = cpid;
-				int* our_loc = malloc(sizeof(int));
-				int* stat = our_loc;
+				int* stat = 0;
 				waitpid(cpid, stat, 0);
 				fgCid = 0;
-				free(our_loc);
 			}
 		}
 	}
