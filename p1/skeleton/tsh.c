@@ -16,6 +16,7 @@
 #include <signal.h>
 #include <string.h>
 #include <unistd.h>
+#include <sys/param.h>
 
 /************Private include**********************************************/
 #include "tsh.h"
@@ -108,8 +109,5 @@ sig(int signo) {
 	if (fgCid != 0) {
 		// Send SIGINT to it
 		kill(fgCid, SIGINT);
-	} else {
-		// Otherwise exist
-		exit(1);
 	}
 } /* sig */

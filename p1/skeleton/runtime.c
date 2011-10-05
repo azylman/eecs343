@@ -280,7 +280,6 @@ Exec(commandT* cmd, bool forceFork) {
 	if(!forceFork) {
 		// Stuff here later on for dealing with things that aren't force-forked.
 	} else {
-	
 		sigset_t x;
 		sigemptyset (&x);
 		sigaddset(&x, SIGCHLD);
@@ -300,6 +299,7 @@ Exec(commandT* cmd, bool forceFork) {
 				int* stat = 0;
 				waitpid(cpid, stat, 0);
 				fgCid = 0;
+				sigprocmask(SIG_UNBLOCK, &x, NULL);
 			}
 		}
 	}
@@ -421,11 +421,6 @@ RunBuiltInCmd(commandT* cmd) {
 		if (res != 0) {
 			perror("cd failed");
 		}
-		return;
-	}
-	
-	if (strcmp(cmd->name, "script") == 0) {
-		// Do nothing.
 		return;
 	}
 	
@@ -552,8 +547,11 @@ char* getFullPath(char* filename)  {
 	if (found) {
 		return result;
 	} else {
+		// We'll always be line 1 because we don't support reading from files. If we did, this would need a new parameter (line #);
+		strcpy(result, "line 1: ");
+		strcat(result, filename);
+		PrintPError(result);
 		free(result);
-		perror(filename);
 		return NULL;
 	}
 }
