@@ -360,18 +360,13 @@ IsBuiltIn(char* cmd) {
 	
 	// Look for a VAR=var type of command.
 	int i;
-	bool foundEquals = FALSE;
 	for (i = 0; i < strlen(cmd); ++i) {
-		if (cmd[i] == ' ') {
-			return FALSE;
-		}
-		
 		if (cmd[i] == '=') {
-			foundEquals = TRUE;
+			return TRUE;
 		}
 	}
 	
-	return foundEquals;
+	return FALSE;
 } /* IsBuiltIn */
 
 
