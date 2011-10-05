@@ -280,12 +280,19 @@ Exec(commandT* cmd, bool forceFork) {
 	if(!forceFork) {
 		// Stuff here later on for dealing with things that aren't force-forked.
 	} else {
+	
+		sigset_t x;
+		sigemptyset (&x);
+		sigaddset(&x, SIGCHLD);
+		sigprocmask(SIG_BLOCK, &x, NULL);
+	
 		if ((cpid = fork()) < 0){
 			perror("fork failed");
 		} else {
 			if (cpid == 0) { // child
 				setpgid(0, 0);
 				convertFirstArgToCommandName(cmd);
+				sigprocmask(SIG_UNBLOCK, &x, NULL);
 				execv(cmd->name, cmd->argv);
 				perror("exec failed");
 			} else { // parent
@@ -353,8 +360,7 @@ static bool
 IsBuiltIn(char* cmd) {
 	if (strcmp(cmd, "echo") == 0 ||
 		strcmp(cmd, "exit") == 0 ||
-		strcmp(cmd, "cd") == 0 ||
-		strcmp(cmd, "script") == 0) {
+		strcmp(cmd, "cd") == 0) {
 		return TRUE;
 	}
 	
