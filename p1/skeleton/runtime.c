@@ -392,6 +392,7 @@ RunBuiltInCmd(commandT* cmd) {
 				char* varName = malloc(strlen(cmd->argv[i])*sizeof(char));
 				memcpy(varName, cmd->argv[i] + sizeof(char), strlen(cmd->argv[i]) * sizeof(char));
 				printf("%s ", getenv(varName));
+				free(varName);
 			}
 			
 		}
