@@ -1,4 +1,9 @@
+./myspin 4 &
+./myspin 5 
+SLEEP 2
+TSTP
 SLEEP 1
-VAR=foo
-echo $VAR
+jobs
+bg 2
+jobs
 exit

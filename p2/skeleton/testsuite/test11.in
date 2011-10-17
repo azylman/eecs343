@@ -1,5 +1,9 @@
-ls test.5
+./myspin 4 &
+./myspin 5 
+SLEEP 2
+TSTP
 SLEEP 1
-INT
-pwd
+jobs
+fg 2
+SLEEP 4
 exit

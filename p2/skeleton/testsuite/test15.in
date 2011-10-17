@@ -1,6 +1,5 @@
-SHELL=SELF
-script -f -q
+ls test.5
 SLEEP 1
-PS1="[\u@\h:\w] % "
-whoami
+INT
+pwd
 exit

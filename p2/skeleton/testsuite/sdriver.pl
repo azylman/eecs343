@@ -101,6 +101,14 @@ local (*Reader, *Writer);
 $pid = open3(\*Writer, ">&STDOUT", ">&STDOUT", "$shellprog $shellargs");
 Writer->autoflush();
 
+
+#enable alias expansion when the reference shell is used (bash)
+$len = length($shellprog);
+if ( substr($shellprog, $len-5, $len) eq "/bash") {
+   print Writer "shopt -s expand_aliases\n";
+   print Writer "set -o monitor\n";
+}
+
 # The autograder will want to know the child shell's pid
 if ($grade) {
     print ("pid=$pid\n");

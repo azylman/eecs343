@@ -129,10 +129,10 @@ echo "-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=";
 echo "${TC_PASSED} basic test cases passed";
 echo;
 
-sh ${TC_DIR}/setup_extra.sh;
 # Run extra credit test cases
 echo "RUN EXTRA CREDIT TEST CASES";
 ETC_PASSED=0;
+
 for tc in ${EXTRA_TESTS}; do
 	ARGS="";
 	if [[ -f ${TC_DIR}/${tc}.arg ]]; then
@@ -142,10 +142,10 @@ for tc in ${EXTRA_TESTS}; do
 		cp ${TC_DIR}/${tc}.out ${OUTPUT}/${tc}.orig;
 	else
 		if [[ -f ${TC_DIR}/${tc}.in ]]; then
-                        ./${SDRIVER} -t ${TC_DIR}/${tc}.in -s ${TC_DIR}/${ORIG} > ${OUTPUT}/${tc}.orig 2>&1;
+                        ./${SDRIVER} -t ${TC_DIR}/${tc}.in -s ${BASH} > ${OUTPUT}/${tc}.orig 2>&1;
 #                        cp ${OUTPUT}/${tc}.orig ${TC_DIR}/${tc}.out;
 		else
-			${TC_DIR}/${ORIG} ${ARGS} > ${OUTPUT}/${tc}.orig 2>&1;		
+			${BASH} ${ARGS} > ${OUTPUT}/${tc}.orig 2>&1;		
 		fi
 	fi
 
@@ -230,6 +230,5 @@ fi;
 
 	
 #Clean up
-sh ${TC_DIR}/remove_extra.sh;
 cleanUp;
 
