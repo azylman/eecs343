@@ -125,6 +125,10 @@ convertFirstArgToCommandName(commandT* cmd);
  */
 void
 RunCmd(commandT* cmd) {
+	// If the last character is an ampersand, RunCmdBg
+	// If there's a >, RunCmdRedirOut
+	// If there's a <, RunCmdRedirIn
+	// If there's a |, do some complex stuff
 	RunCmdFork(cmd, TRUE);
 } /* RunCmd */
 
@@ -168,7 +172,6 @@ void
 RunCmdBg(commandT* cmd) {
 	// TODO
 } /* RunCmdBg */
-
 
 /*
  * RunCmdPipe
@@ -554,4 +557,14 @@ char* getFullPath(char* filename)  {
 		free(result);
 		return NULL;
 	}
+}
+
+void ChangeStdIn(char* filePath) {
+	int fid = open(filePath, O_WRONLY | O_CREAT);
+	ChangeStdInToFd(fid);
+	close(fid);
+}
+
+void ChangeStdInToFid(int fid) {
+	dup2(fid, 0);
 }
