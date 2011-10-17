@@ -170,7 +170,9 @@ RunCmdFork(commandT* cmd, bool fork) {
  */
 void
 RunCmdBg(commandT* cmd) {
-	// TODO
+	// Set stdin to /dev/null
+	// Fork and call RunExternalCommand with fork = FALSE)
+	// Restore file descriptors
 } /* RunCmdBg */
 
 /*
@@ -203,6 +205,9 @@ RunCmdPipe(commandT* cmd1, commandT* cmd2) {
  */
 void
 RunCmdRedirOut(commandT* cmd, char* file) {
+	// Set stdout to /dev/null
+	// Call RunExternalCmd with fork = TRUE)
+	// Restore file descriptors
 } /* RunCmdRedirOut */
 
 
@@ -219,6 +224,9 @@ RunCmdRedirOut(commandT* cmd, char* file) {
  */
 void
 RunCmdRedirIn(commandT* cmd, char* file) {
+	// Set stdin to /dev/null
+	// Call RunExternalCmd with fork = TRUE)
+	// Restore file descriptors
 }	/* RunCmdRedirIn */
 
 
@@ -281,7 +289,7 @@ Exec(commandT* cmd, bool forceFork) {
 	int cpid;
 	
 	if(!forceFork) {
-		// Stuff here later on for dealing with things that aren't force-forked.
+		// Run a command
 	} else {
 		sigset_t x;
 		sigemptyset (&x);
