@@ -1,0 +1,22 @@
+.\" Process this file with
+.\" groff -man -Tascii tsh.1
+.\"
+.TH TSH 1 "OCTOBER 2011" "NU EECS 343" "NU EECS 343 - Operating Systems - Fall 2011"
+.SH NAME
+tsh \- A tiny shell
+.SH SYNOPSIS
+.B tsh
+.SH DESCRIPTION
+.B tsh
+supports running any external command (except script), as well as a variety of built-in commands.
+.SH BUILT-IN COMMANDS
+.IP exit
+Exits tsh
+.IP cd
+Changes the current working directory
+.IP echo
+Echoes its arguments to tsh (stdout)
+.SH DESIGN APPROACH
+Mostly, I filled in the methods that were given to us in the skeleton. There were a few additional methods that I added as helpers, however: getFullPath (returns the full file path of an external command), fileExists (checks if a file at the given location exists), and convertFirstArgToCommandName (takes a command and converts argv[0] into just the name of the command [e.g. /bin/ls -> ls]). I also added global variable to keep track of if there's currently a foreground child (for the purposes of proagating sigint). I did some basic extra credit. I didn't do custom prompts, though I support a static prompt, and I didn't do reading from a .tshrc file.
+.SH AUTHOR
+Alex Zylman, amz716, azylman@u.northwestern.edu
