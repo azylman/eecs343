@@ -108,6 +108,10 @@ getFullPath(char * filename);
 /* converts argv[0] of a command to just the command name (e.g. /bin/ls -> ls) */
 void
 convertFirstArgToCommandName(commandT* cmd);
+void
+ChangeStdIn(char* filePath);
+void
+ChangeStdInToFid(int fid);
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
@@ -125,7 +129,11 @@ convertFirstArgToCommandName(commandT* cmd);
  */
 void
 RunCmd(commandT* cmd) {
-	// If the last character is an ampersand, RunCmdBg
+	if (*cmd->argv[cmd->argc - 1] == '&') {
+		cmd->argv[cmd->argc - 1] = 0;
+		RunCmdBg(cmd);
+		return;
+	}
 	// If there's a >, RunCmdRedirOut
 	// If there's a <, RunCmdRedirIn
 	// If there's a |, do some complex stuff
@@ -170,9 +178,30 @@ RunCmdFork(commandT* cmd, bool fork) {
  */
 void
 RunCmdBg(commandT* cmd) {
+	int cpid;
+	
+	int oldStdIn = dup(STDIN_FILENO);
 	// Set stdin to /dev/null
-	// Fork and call RunExternalCommand with fork = FALSE)
-	// Restore file descriptors
+	ChangeStdIn("/dev/null");
+	
+	if ((cpid = fork()) < 0){
+		perror("fork failed");
+	} else {
+		sigset_t x;
+		sigemptyset (&x);
+		sigaddset(&x, SIGCHLD);
+		sigprocmask(SIG_BLOCK, &x, NULL);
+	
+		if (cpid == 0) { // child
+			setpgid(0, 0);
+			convertFirstArgToCommandName(cmd);
+			sigprocmask(SIG_UNBLOCK, &x, NULL);
+			RunExternalCmd(cmd, FALSE);
+		} else { // parent
+			sigprocmask(SIG_UNBLOCK, &x, NULL);
+			ChangeStdInToFid(oldStdIn);
+		}
+	}
 } /* RunCmdBg */
 
 /*
@@ -289,7 +318,8 @@ Exec(commandT* cmd, bool forceFork) {
 	int cpid;
 	
 	if(!forceFork) {
-		// Run a command
+		execv(cmd->name, cmd->argv);
+		perror("exec failed");
 	} else {
 		sigset_t x;
 		sigemptyset (&x);
@@ -568,8 +598,8 @@ char* getFullPath(char* filename)  {
 }
 
 void ChangeStdIn(char* filePath) {
-	int fid = open(filePath, O_WRONLY | O_CREAT);
-	ChangeStdInToFd(fid);
+	int fid = open(filePath, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	ChangeStdInToFid(fid);
 	close(fid);
 }
 
