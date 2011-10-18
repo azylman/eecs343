@@ -114,6 +114,8 @@ void
 ChangeStdInToFid(int fid);
 void
 AddJob(int pid);
+bgjobL*
+CreateJob(int pid);
 void
 RemoveJob(int pid);
 /************External Declaration*****************************************/
@@ -203,6 +205,7 @@ RunCmdBg(commandT* cmd) {
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 			RunExternalCmd(cmd, FALSE);
 		} else { // parent
+			AddJob(cpid);
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 			ChangeStdInToFid(oldStdIn);
 		}
@@ -614,16 +617,16 @@ void ChangeStdInToFid(int fid) {
 
 void AddJob(int pid) {
 	bgjobL* curr = bgjobs;
-	if (curr == null) {
+	if (curr == NULL) {
 		curr = CreateJob(pid);
 		return;
 	}
 	
-	while (curr->next != null) {
+	while (curr->next != NULL) {
 		curr = curr->next;
 	}
 	
-	curr->next(CreateJob(pid));
+	curr->next = CreateJob(pid);
 }
 
 bgjobL* CreateJob(int pid) {
@@ -634,22 +637,22 @@ bgjobL* CreateJob(int pid) {
 
 void RemoveJob(int pid) {
 	bgjobL* curr = bgjobs;
-	if (curr == null) {
+	if (curr == NULL) {
 		return;
 	}
 	
 	if (curr->pid == pid) {
-		bgjobsL* next = curr->next;
+		bgjobL* next = curr->next;
 		free(curr);
 		bgjobs = next;
 		return;
 	}
 	
-	while (curr->next->pid != pid && curr->next != null) {
+	while (curr->next->pid != pid && curr->next != NULL) {
 		curr = curr->next;
 	}
 	
-	if (curr->next == null) {
+	if (curr->next == NULL) {
 		return;
 	}
 	
