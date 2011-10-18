@@ -686,6 +686,16 @@ void ChangeStdInToFid(int fid) {
 	dup2(fid, 0);
 }
 
+void ChangeStdOut(char* filePath) {
+	int fid = open(filePath, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	ChangeStdOutToFid(fid);
+	close(fid);
+}
+
+void ChangeStdOutToFid(int fid) {
+	dup2(fid, 1);
+}
+
 int AddJob(int pid, commandT* cmd) {
 	bgjobL* curr = bgjobs;
 	if (curr == NULL) {
