@@ -114,6 +114,10 @@ void
 ChangeStdIn(char* filePath);
 void
 ChangeStdInToFid(int fid);
+void
+ChangeStdOut(char* filePath);
+void
+ChangeStdOutToFid(int fid);
 int
 AddJob(int pid, commandT* cmd);
 bgjobL*
@@ -148,8 +152,30 @@ RunCmd(commandT* cmd) {
 		return;
 	}
 	
-	// If there's a >, RunCmdRedirOut
-	// If there's a <, RunCmdRedirIn
+	int i;
+	for (i = 0; i < cmd->argc; ++i) {
+		if (*cmd->argv[i] == '>') {
+			cmd->argv[i] = 0;
+			if (i != cmd->argc) {
+				RunCmdRedirOut(cmd, cmd->argv[i + 1]);
+			} else {
+				// error: no file was specified
+			}
+			return;
+		}
+	}
+	
+	for (i = 0; i < cmd->argc; ++i) {
+		if (*cmd->argv[i] == '<') {
+			cmd->argv[i] = 0;
+			if (i != cmd->argc) {
+				RunCmdRedirIn(cmd, cmd->argv[i + 1]);
+			} else {
+				// error: no file was specified
+			}
+			return;
+		}
+	}
 	
 	RunCmdFork(cmd, TRUE);
 } /* RunCmd */
@@ -269,9 +295,10 @@ RunCmdPipe(commandT* cmd1, commandT* cmd2) {
  */
 void
 RunCmdRedirOut(commandT* cmd, char* file) {
-	// Set stdout to /dev/null
-	// Call RunExternalCmd with fork = TRUE)
-	// Restore file descriptors
+	int oldStdOut = dup(STDOUT_FILENO);
+	ChangeStdOut(file);
+	RunExternalCmd(cmd, TRUE);
+	ChangeStdOutToFid(oldStdOut);
 } /* RunCmdRedirOut */
 
 
@@ -288,9 +315,10 @@ RunCmdRedirOut(commandT* cmd, char* file) {
  */
 void
 RunCmdRedirIn(commandT* cmd, char* file) {
-	// Set stdin to /dev/null
-	// Call RunExternalCmd with fork = TRUE)
-	// Restore file descriptors
+	int oldStdIn = dup(STDIN_FILENO);
+	ChangeStdIn(file);
+	RunExternalCmd(cmd, TRUE);
+	ChangeStdInToFid(oldStdIn);
 }	/* RunCmdRedirIn */
 
 
@@ -695,7 +723,7 @@ char* getFullPath(char* filename)  {
 }
 
 void ChangeStdIn(char* filePath) {
-	int fid = open(filePath, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	int fid = open(filePath, O_RDONLY);
 	ChangeStdInToFid(fid);
 	close(fid);
 }
