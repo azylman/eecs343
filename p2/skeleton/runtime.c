@@ -122,6 +122,10 @@ void
 RemoveJob(int pid);
 int
 GetNextJobNumber();
+bgjobL*
+GetJob(int jid);
+bgjobL*
+GetLastJob();
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
@@ -490,18 +494,9 @@ RunBuiltInCmd(commandT* cmd) {
 		}
 			
 		if (cmd->argc == 1) {			
-			while (curr->next != NULL) {
-				curr = curr->next;
-			}
+			curr = GetLastJob();
 		} else {
-			while (curr != NULL) {
-				curr = curr->next;
-				int targetJid = atoi(cmd->argv[1]);
-				if (curr->jid == targetJid) {
-					break;
-				}
-			}
-			
+			curr = GetJob(atoi(cmd->argv[1]));
 			if (curr == NULL) {
 				// error: job not found
 				return;
@@ -523,6 +518,25 @@ RunBuiltInCmd(commandT* cmd) {
 	}
 	
 	if (strcmp(cmd->name, "fg") == 0) {
+		bgjobL* curr = bgjobs;
+		
+		if (curr == NULL) {
+			// error: no bg jobs
+			return;
+		}
+			
+		if (cmd->argc == 1) {			
+			curr = GetLastJob();
+		} else {
+			curr = GetJob(atoi(cmd->argv[1]));
+			if (curr == NULL) {
+				// error: job not found
+				return;
+			}
+		}
+		
+		// processing
+		return;
 	}
 	
 	// This is a VAR=var thing if we reach here.
@@ -736,4 +750,27 @@ int GetNextJobNumber() {
 	}
 	
 	return curr->jid + 1;
+}
+
+bgjobL*
+GetJob(int jid) {
+	bgjobL* curr = bgjobs;
+	
+	while (curr != NULL) {
+		curr = curr->next;
+		if (curr->jid == jid) {
+			break;
+		}
+	}
+
+	return curr;
+}
+
+bgjobL*
+GetLastJob() {
+	bgjobL* curr = bgjobs;
+	while (curr->next != NULL) {
+		curr = curr->next;
+	}
+	return curr;
 }
