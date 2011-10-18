@@ -75,6 +75,7 @@ typedef struct bgjob_l
 {
 	pid_t pid;
 	struct bgjob_l* next;
+	char* name;
 } bgjobL;
 
 /* the pids of the background processes */
@@ -113,9 +114,9 @@ ChangeStdIn(char* filePath);
 void
 ChangeStdInToFid(int fid);
 void
-AddJob(int pid);
+AddJob(int pid, commandT* cmd);
 bgjobL*
-CreateJob(int pid);
+CreateJob(int pid, commandT* cmd);
 void
 RemoveJob(int pid);
 int CountJobs();
@@ -137,8 +138,6 @@ int CountJobs();
 void
 RunCmd(commandT* cmd) {
 	if (*cmd->argv[cmd->argc - 1] == '&') {
-		cmd->argc--;
-		cmd->argv[cmd->argc] = 0;
 		RunCmdBg(cmd);
 		return;
 	}
@@ -201,12 +200,15 @@ RunCmdBg(commandT* cmd) {
 		sigprocmask(SIG_BLOCK, &x, NULL);
 	
 		if (cpid == 0) { // child
+			cmd->argc--;
+			cmd->argv[cmd->argc] = 0;
+			
 			setpgid(0, 0);
 			convertFirstArgToCommandName(cmd);
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 			RunExternalCmd(cmd, FALSE);
 		} else { // parent
-			AddJob(cpid);
+			AddJob(cpid, cmd);
 			printf("[%i] %i\n", CountJobs(), cpid);
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 			ChangeStdInToFid(oldStdIn);
@@ -519,7 +521,7 @@ RunBuiltInCmd(commandT* cmd) {
 		int jobs = 0;
 		while (curr != NULL) {
 			jobs++;
-			printf("[%i]\tRunning\n", jobs);
+			printf("[%i]\tRunning\t\t%s\n", jobs, curr->name);
 			curr = curr->next;
 		}
 		return;
@@ -667,10 +669,10 @@ void ChangeStdInToFid(int fid) {
 	dup2(fid, 0);
 }
 
-void AddJob(int pid) {
+void AddJob(int pid, commandT* cmd) {
 	bgjobL* curr = bgjobs;
 	if (curr == NULL) {
-		bgjobs = CreateJob(pid);
+		bgjobs = CreateJob(pid, cmd);
 		return;
 	}
 	
@@ -678,13 +680,20 @@ void AddJob(int pid) {
 		curr = curr->next;
 	}
 	
-	curr->next = CreateJob(pid);
+	curr->next = CreateJob(pid, cmd);
 }
 
-bgjobL* CreateJob(int pid) {
+bgjobL* CreateJob(int pid, commandT* cmd) {
 	bgjobL* job = malloc(sizeof(bgjobL));
 	job->pid = pid;
 	job->next = NULL;
+	job->name = malloc(sizeof(*cmd->argv) + sizeof(char) * cmd->argc);
+	strcpy(job->name, cmd->argv[0]);
+	int i;
+	for (i = 1; i < cmd->argc; ++i) {
+		strcat(job->name, " ");
+		strcat(job->name, cmd->argv[i]);
+	}
 	return job;
 }
 
