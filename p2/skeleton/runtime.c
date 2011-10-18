@@ -535,7 +535,12 @@ RunBuiltInCmd(commandT* cmd) {
 			}
 		}
 		
-		// processing
+		tcsetpgrp(curr->pid, STDIN_FILENO);
+		fgCid = curr->pid;
+		RemoveJob(curr->jid);
+		int* stat = 0;
+		waitpid(fgCid, stat, 0);
+		fgCid = 0;
 		return;
 	}
 	
@@ -712,20 +717,20 @@ bgjobL* CreateJob(int pid, commandT* cmd) {
 	return job;
 }
 
-void RemoveJob(int pid) {
+void RemoveJob(int jid) {
 	bgjobL* curr = bgjobs;
 	if (curr == NULL) {
 		return;
 	}
 	
-	if (curr->pid == pid) {
+	if (curr->jid == jid) {
 		bgjobL* next = curr->next;
 		free(curr);
 		bgjobs = next;
 		return;
 	}
 	
-	while (curr->next != NULL && curr->next->pid != pid) {
+	while (curr->next != NULL && curr->next->jid != jid) {
 		curr = curr->next;
 	}
 	
@@ -735,6 +740,7 @@ void RemoveJob(int pid) {
 	
 	bgjobL* jobToEnd = curr->next;
 	curr->next = jobToEnd->next;
+	free(jobToEnd->name);
 	free(jobToEnd);
 }
 
