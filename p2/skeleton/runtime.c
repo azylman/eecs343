@@ -118,6 +118,7 @@ bgjobL*
 CreateJob(int pid);
 void
 RemoveJob(int pid);
+int CountJobs();
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
@@ -206,6 +207,7 @@ RunCmdBg(commandT* cmd) {
 			RunExternalCmd(cmd, FALSE);
 		} else { // parent
 			AddJob(cpid);
+			printf("[%i] %i\n", CountJobs(), cpid);
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 			ChangeStdInToFid(oldStdIn);
 		}
@@ -409,7 +411,9 @@ static bool
 IsBuiltIn(char* cmd) {
 	if (strcmp(cmd, "echo") == 0 ||
 		strcmp(cmd, "exit") == 0 ||
-		strcmp(cmd, "cd") == 0) {
+		strcmp(cmd, "cd") == 0 ||
+		strcmp(cmd, "bg") == 0 ||
+		strcmp(cmd, "jobs") == 0) {
 		return TRUE;
 	}
 	
@@ -469,6 +473,54 @@ RunBuiltInCmd(commandT* cmd) {
 		// 0: success, -1: failure
 		if (res != 0) {
 			perror("cd failed");
+		}
+		return;
+	}
+	
+	if (strcmp(cmd->name, "bg") == 0) {
+		int pidToProcess = -1;
+		
+		bgjobL* curr = bgjobs;
+		
+		if (curr == NULL) {
+			// error: no bg jobs
+			return;
+		}
+			
+		if (cmd->argc == 1) {			
+			while (curr->next != NULL) {
+				curr = curr->next;
+			}
+			
+			pidToProcess = curr->pid;
+		} else {
+			while (curr != NULL) {
+				curr = curr->next;
+				int targetPid = atoi(cmd->argv[1]);
+				if (curr->pid == targetPid) {
+					pidToProcess = curr->pid;
+					break;
+				}
+			}
+			
+			if (pidToProcess == -1) {
+				// error: job not found
+				return;
+			}
+		}
+		
+		kill(fgCid, SIGCONT);
+		return;
+	}
+	
+	if (strcmp(cmd->name, "jobs") == 0) {
+		bgjobL* curr = bgjobs;
+		
+		int jobs = 0;
+		while (curr != NULL) {
+			jobs++;
+			printf("[%i]\tRunning\n", jobs);
+			curr = curr->next;
 		}
 		return;
 	}
@@ -618,7 +670,7 @@ void ChangeStdInToFid(int fid) {
 void AddJob(int pid) {
 	bgjobL* curr = bgjobs;
 	if (curr == NULL) {
-		curr = CreateJob(pid);
+		bgjobs = CreateJob(pid);
 		return;
 	}
 	
@@ -632,6 +684,7 @@ void AddJob(int pid) {
 bgjobL* CreateJob(int pid) {
 	bgjobL* job = malloc(sizeof(bgjobL));
 	job->pid = pid;
+	job->next = NULL;
 	return job;
 }
 
@@ -648,7 +701,7 @@ void RemoveJob(int pid) {
 		return;
 	}
 	
-	while (curr->next->pid != pid && curr->next != NULL) {
+	while (curr->next != NULL && curr->next->pid != pid) {
 		curr = curr->next;
 	}
 	
@@ -659,4 +712,16 @@ void RemoveJob(int pid) {
 	bgjobL* jobToEnd = curr->next;
 	curr->next = jobToEnd->next;
 	free(jobToEnd);
+}
+
+int CountJobs() {
+	bgjobL* curr = bgjobs;
+	
+	int jobs = 0;
+	while (curr != NULL) {
+		jobs++;
+		curr = curr->next;
+	}
+	
+	return jobs;
 }
