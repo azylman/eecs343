@@ -112,6 +112,10 @@ void
 ChangeStdIn(char* filePath);
 void
 ChangeStdInToFid(int fid);
+void
+AddJob(int pid);
+void
+RemoveJob(int pid);
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
@@ -606,4 +610,50 @@ void ChangeStdIn(char* filePath) {
 
 void ChangeStdInToFid(int fid) {
 	dup2(fid, 0);
+}
+
+void AddJob(int pid) {
+	bgjobL* curr = bgjobs;
+	if (curr == null) {
+		curr = CreateJob(pid);
+		return;
+	}
+	
+	while (curr->next != null) {
+		curr = curr->next;
+	}
+	
+	curr->next(CreateJob(pid));
+}
+
+bgjobL* CreateJob(int pid) {
+	bgjobL* job = malloc(sizeof(bgjobL));
+	job->pid = pid;
+	return job;
+}
+
+void RemoveJob(int pid) {
+	bgjobL* curr = bgjobs;
+	if (curr == null) {
+		return;
+	}
+	
+	if (curr->pid == pid) {
+		bgjobsL* next = curr->next;
+		free(curr);
+		bgjobs = next;
+		return;
+	}
+	
+	while (curr->next->pid != pid && curr->next != null) {
+		curr = curr->next;
+	}
+	
+	if (curr->next == null) {
+		return;
+	}
+	
+	bgjobL* jobToEnd = curr->next;
+	curr->next = jobToEnd->next;
+	free(jobToEnd);
 }
