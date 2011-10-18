@@ -147,9 +147,10 @@ RunCmd(commandT* cmd) {
 		RunCmdBg(cmd);
 		return;
 	}
+	
 	// If there's a >, RunCmdRedirOut
 	// If there's a <, RunCmdRedirIn
-	// If there's a |, do some complex stuff
+	
 	RunCmdFork(cmd, TRUE);
 } /* RunCmd */
 
@@ -170,6 +171,8 @@ void
 RunCmdFork(commandT* cmd, bool fork) {
 	if (cmd->argc <= 0)
 		return;
+		
+	// If there's a |, call RunCmdPipe with the left and right halves
 		
 	if (IsBuiltIn(cmd->argv[0])) {
 		RunBuiltInCmd(cmd);
@@ -370,9 +373,9 @@ Exec(commandT* cmd, bool forceFork) {
 			} else { // parent
 				fgCid = cpid;
 				int* stat = 0;
+				sigprocmask(SIG_UNBLOCK, &x, NULL);
 				waitpid(cpid, stat, 0);
 				fgCid = 0;
-				sigprocmask(SIG_UNBLOCK, &x, NULL);
 			}
 		}
 	}
