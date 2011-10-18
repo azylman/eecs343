@@ -235,6 +235,21 @@ RunCmdBg(commandT* cmd) {
  */
 void
 RunCmdPipe(commandT* cmd1, commandT* cmd2) {
+	// save file descripts
+	// create our pipe
+	// set file descriptors to pipe
+	// fork once for cmd1
+	//		IN CHILD:
+	//			close the unused end of the pipe (read end)
+	//			RunExternalCmd(unforked)
+	// 		IN PARENT:
+	//			fork AGAIN for cmd2
+	//			IN CHILD:
+	//				close the unused end of the pipe (write end)
+	// 				RunCmdFork(unforked);
+	//			IN PARENT:
+	// 				restore file descriptors
+	//				wait on cmd1 child
 } /* RunCmdPipe */
 
 
