@@ -130,7 +130,8 @@ ChangeStdInToFid(int fid);
 void
 RunCmd(commandT* cmd) {
 	if (*cmd->argv[cmd->argc - 1] == '&') {
-		cmd->argv[cmd->argc - 1] = 0;
+		cmd->argc--;
+		cmd->argv[cmd->argc] = 0;
 		RunCmdBg(cmd);
 		return;
 	}
