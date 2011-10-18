@@ -239,7 +239,6 @@ RunCmdBg(commandT* cmd) {
 			cmd->argv[cmd->argc] = 0;
 			
 			setpgid(0, 0);
-			convertFirstArgToCommandName(cmd);
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 			RunExternalCmd(cmd, FALSE);
 		} else { // parent
@@ -381,6 +380,7 @@ Exec(commandT* cmd, bool forceFork) {
 	int cpid;
 	
 	if(!forceFork) {
+		convertFirstArgToCommandName(cmd);
 		execv(cmd->name, cmd->argv);
 		perror("exec failed");
 	} else {
