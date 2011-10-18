@@ -76,6 +76,7 @@ typedef struct bgjob_l
 	pid_t pid;
 	struct bgjob_l* next;
 	char* name;
+	int jid;
 } bgjobL;
 
 /* the pids of the background processes */
@@ -113,13 +114,14 @@ void
 ChangeStdIn(char* filePath);
 void
 ChangeStdInToFid(int fid);
-void
+int
 AddJob(int pid, commandT* cmd);
 bgjobL*
 CreateJob(int pid, commandT* cmd);
 void
 RemoveJob(int pid);
-int CountJobs();
+int
+GetNextJobNumber();
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
@@ -208,8 +210,7 @@ RunCmdBg(commandT* cmd) {
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 			RunExternalCmd(cmd, FALSE);
 		} else { // parent
-			AddJob(cpid, cmd);
-			printf("[%i] %i\n", CountJobs(), cpid);
+			printf("[%i] %i\n", AddJob(cpid, cmd), cpid);
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 			ChangeStdInToFid(oldStdIn);
 		}
@@ -415,7 +416,8 @@ IsBuiltIn(char* cmd) {
 		strcmp(cmd, "exit") == 0 ||
 		strcmp(cmd, "cd") == 0 ||
 		strcmp(cmd, "bg") == 0 ||
-		strcmp(cmd, "jobs") == 0) {
+		strcmp(cmd, "jobs") == 0 ||
+		strcmp(cmd, "fg") == 0) {
 		return TRUE;
 	}
 	
@@ -480,8 +482,6 @@ RunBuiltInCmd(commandT* cmd) {
 	}
 	
 	if (strcmp(cmd->name, "bg") == 0) {
-		int pidToProcess = -1;
-		
 		bgjobL* curr = bgjobs;
 		
 		if (curr == NULL) {
@@ -493,38 +493,36 @@ RunBuiltInCmd(commandT* cmd) {
 			while (curr->next != NULL) {
 				curr = curr->next;
 			}
-			
-			pidToProcess = curr->pid;
 		} else {
 			while (curr != NULL) {
 				curr = curr->next;
-				int targetPid = atoi(cmd->argv[1]);
-				if (curr->pid == targetPid) {
-					pidToProcess = curr->pid;
+				int targetJid = atoi(cmd->argv[1]);
+				if (curr->jid == targetJid) {
 					break;
 				}
 			}
 			
-			if (pidToProcess == -1) {
+			if (curr == NULL) {
 				// error: job not found
 				return;
 			}
 		}
 		
-		kill(fgCid, SIGCONT);
+		kill(curr->pid, SIGCONT);
 		return;
 	}
 	
 	if (strcmp(cmd->name, "jobs") == 0) {
 		bgjobL* curr = bgjobs;
 		
-		int jobs = 0;
 		while (curr != NULL) {
-			jobs++;
-			printf("[%i]\tRunning\t\t%s\n", jobs, curr->name);
+			printf("[%i]\tRunning\t\t%s\n", curr->jid, curr->name);
 			curr = curr->next;
 		}
 		return;
+	}
+	
+	if (strcmp(cmd->name, "fg") == 0) {
 	}
 	
 	// This is a VAR=var thing if we reach here.
@@ -669,11 +667,11 @@ void ChangeStdInToFid(int fid) {
 	dup2(fid, 0);
 }
 
-void AddJob(int pid, commandT* cmd) {
+int AddJob(int pid, commandT* cmd) {
 	bgjobL* curr = bgjobs;
 	if (curr == NULL) {
 		bgjobs = CreateJob(pid, cmd);
-		return;
+		return bgjobs->jid;
 	}
 	
 	while (curr->next != NULL) {
@@ -681,6 +679,8 @@ void AddJob(int pid, commandT* cmd) {
 	}
 	
 	curr->next = CreateJob(pid, cmd);
+	
+	return curr->next->jid;
 }
 
 bgjobL* CreateJob(int pid, commandT* cmd) {
@@ -694,6 +694,7 @@ bgjobL* CreateJob(int pid, commandT* cmd) {
 		strcat(job->name, " ");
 		strcat(job->name, cmd->argv[i]);
 	}
+	job->jid = GetNextJobNumber();
 	return job;
 }
 
@@ -723,14 +724,16 @@ void RemoveJob(int pid) {
 	free(jobToEnd);
 }
 
-int CountJobs() {
+int GetNextJobNumber() {
 	bgjobL* curr = bgjobs;
 	
-	int jobs = 0;
-	while (curr != NULL) {
-		jobs++;
+	if (curr == NULL) {
+		return 1;
+	}
+	
+	while (curr->next != NULL) {
 		curr = curr->next;
 	}
 	
-	return jobs;
+	return curr->jid + 1;
 }
