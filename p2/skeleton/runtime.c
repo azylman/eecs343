@@ -70,6 +70,7 @@
 /************Global Variables*********************************************/
 
 #define NBUILTINCOMMANDS (sizeof BuiltInCommands / sizeof(char*))
+#define BUFSIZE 512
 
 typedef struct bgjob_l
 {
@@ -155,6 +156,7 @@ RunCmd(commandT* cmd) {
 	int i;
 	for (i = 0; i < cmd->argc; ++i) {
 		if (*cmd->argv[i] == '>') {
+			free(cmd->argv[i]);
 			cmd->argv[i] = 0;
 			if (i != cmd->argc) {
 				RunCmdRedirOut(cmd, cmd->argv[i + 1]);
@@ -167,6 +169,7 @@ RunCmd(commandT* cmd) {
 	
 	for (i = 0; i < cmd->argc; ++i) {
 		if (*cmd->argv[i] == '<') {
+			free(cmd->argv[i]);
 			cmd->argv[i] = 0;
 			if (i != cmd->argc) {
 				RunCmdRedirIn(cmd, cmd->argv[i + 1]);
@@ -233,9 +236,10 @@ RunCmdBg(commandT* cmd) {
 		sigemptyset (&x);
 		sigaddset(&x, SIGCHLD);
 		sigprocmask(SIG_BLOCK, &x, NULL);
-	
+		
 		if (cpid == 0) { // child
 			cmd->argc--;
+			free(cmd->argv[cmd->argc]);
 			cmd->argv[cmd->argc] = 0;
 			
 			setpgid(0, 0);
@@ -762,7 +766,7 @@ bgjobL* CreateJob(int pid, commandT* cmd) {
 	bgjobL* job = malloc(sizeof(bgjobL));
 	job->pid = pid;
 	job->next = NULL;
-	job->name = malloc(sizeof(*cmd->argv) + sizeof(char) * cmd->argc);
+	job->name = malloc(sizeof(char) * BUFSIZE);
 	strcpy(job->name, cmd->argv[0]);
 	int i;
 	for (i = 1; i < cmd->argc; ++i) {
