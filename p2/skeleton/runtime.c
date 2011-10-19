@@ -687,6 +687,8 @@ CheckJobs() {
 			if (WIFCONTINUED(status)) {
 				curr->status = "Running";
 			} else {
+				curr->status = "Done";
+				printf("[%i]\t%s\t\t%s\n", curr->jid, curr->status, curr->name);
 				RemoveJob(curr->jid);
 			}
 		} else {

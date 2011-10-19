@@ -112,7 +112,9 @@ sig(int signo) {
 			kill(-fgCid, SIGINT);
 		}
 	} else {
-		kill(-fgCid, SIGSTOP);
-		AddJob(fgCid, fgCmd, "Stopped");
+		if (fgCid != 0) {
+			kill(-fgCid, SIGSTOP);
+			AddJob(fgCid, fgCmd, "Stopped");
+		}
 	}
 } /* sig */
