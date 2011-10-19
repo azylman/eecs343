@@ -79,6 +79,7 @@ typedef struct bgjob_l
 	struct bgjob_l* next;
 	char* name;
 	int jid;
+	char* status;
 } bgjobL;
 
 /* the pids of the background processes */
@@ -246,10 +247,6 @@ void
 RunCmdBg(commandT* cmd) {
 	int cpid;
 	
-	int oldStdIn = dup(STDIN_FILENO);
-	// Set stdin to /dev/null
-	ChangeStdIn("/dev/null");
-	
 	if ((cpid = fork()) < 0){
 		perror("fork failed");
 	} else {
@@ -259,17 +256,17 @@ RunCmdBg(commandT* cmd) {
 		sigprocmask(SIG_BLOCK, &x, NULL);
 		
 		if (cpid == 0) { // child
+			ChangeStdIn("/dev/null");
 			cmd->argc--;
 			free(cmd->argv[cmd->argc]);
 			cmd->argv[cmd->argc] = 0;
 			
 			setpgid(0, 0);
-			sigprocmask(SIG_UNBLOCK, &x, NULL);
 			RunExternalCmd(cmd, FALSE);
+			sigprocmask(SIG_UNBLOCK, &x, NULL);
 		} else { // parent
 			printf("[%i] %i\n", AddJob(cpid, cmd), cpid);
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
-			ChangeStdInToFid(oldStdIn);
 		}
 	}
 } /* RunCmdBg */
@@ -300,7 +297,6 @@ RunCmdPipe(commandT* cmd1, commandT* cmd2) {
 		perror("fork failed");
 	} else {
 		if (cpid1 == 0) { // child
-			//ChangeStdInToFid(pipeId[0]);
 			ChangeStdOutToFid(pipeId[1]);
 			close(pipeId[0]);
 			if (fgCid == 0) {
@@ -614,7 +610,7 @@ RunBuiltInCmd(commandT* cmd) {
 		bgjobL* curr = bgjobs;
 		
 		while (curr != NULL) {
-			printf("[%i]\tRunning\t\t%s\n", curr->jid, curr->name);
+			printf("[%i]\t%s\t\t%s\n", curr->jid, curr->status, curr->name);
 			curr = curr->next;
 		}
 		return;
@@ -680,6 +676,15 @@ RunBuiltInCmd(commandT* cmd) {
  */
 void
 CheckJobs() {
+	bgjobL* curr = bgjobs;
+	while (curr != NULL) {
+		int* status = malloc(sizeof(int));
+		if (waitpid(curr->pid, status, WNOHANG | WUNTRACED) != 0) {
+			RemoveJob(curr->jid);
+			free(status);
+		}
+		curr = curr->next;
+	}
 } /* CheckJobs */
 
 char*
@@ -821,6 +826,7 @@ bgjobL* CreateJob(int pid, commandT* cmd) {
 	job->next = NULL;
 	job->name = createStringFromArgumentList(cmd->argv, 0, cmd->argc);
 	job->jid = GetNextJobNumber();
+	job->status = "Running";
 	return job;
 }
 
