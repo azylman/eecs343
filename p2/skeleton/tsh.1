@@ -8,15 +8,34 @@ tsh \- A tiny shell
 .B tsh
 .SH DESCRIPTION
 .B tsh
-supports running any external command (except script), as well as a variety of built-in commands.
+tsh is a tiny shell, or command language interpreter, that executes commands read from the standard input or from a file.  tsh has a subset of the features of the Bourne Again  shell, and operates in exactly the same manner.
 .SH BUILT-IN COMMANDS
 .IP exit
 Exits tsh
 .IP cd
-Changes the current working directory
+.B [
+.I path
+.B ]
+Changes the current working directory to 
+.I path
 .IP echo
-Echoes its arguments to tsh (stdout)
+.B [string ...]
+Sends the strings input to stdout, each separated by a space
+.IP bg 
+.B [jid]
+Sends a SIGCONT signal to backround job with job id jid.  If no jid is given, sends SIGCONT to the last added job to the background.
+.IP fg
+.B [jid]
+Returns the backgrounded job with job id jid to the foreground.  If no jid is given, the most recently backgrounded job is chosen.
+.IP jobs
+Prints a table of all currently running jobs.  It gives the job id, the status of the job, as well as the command that invoked the job.  
 .SH DESIGN APPROACH
-Mostly, I filled in the methods that were given to us in the skeleton. There were a few additional methods that I added as helpers, however: getFullPath (returns the full file path of an external command), fileExists (checks if a file at the given location exists), and convertFirstArgToCommandName (takes a command and converts argv[0] into just the name of the command [e.g. /bin/ls -> ls]). I also added global variable to keep track of if there's currently a foreground child (for the purposes of proagating sigint). I did some basic extra credit. I didn't do custom prompts, though I support a static prompt, and I didn't do reading from a .tshrc file.
+In designing tsh, I intended to make it work as closely to the Bourne Shell, sh, as possible.  The design is intended to mirror the functionality of sh, though it is a subset of sh.
+
+Mostly, I filled in the methods that were given to us in the skeleton. I chose to add many additional methods as helpers as well: getFullPath, fileExists, convertFirstArgToCommandName, a set of functions for changing STDIN and STDOUT, A set of functions for managing a list of background jobs, and a function for splitting piped commands into two separate commands.
+
+Some of the most challenging parts of this project were implementing Pipes and correctly handling signals. Pipes were difficult to understand due to the recursive nature of multiple pipes in one command as well as being sure to fork and reap all the children necessary to handle the different commands in the pipe.  Grouping the children from a pipe into a single process group was also a challenge, so that SIGINT signals could be passed to all the processes involved in handling a pipe.  SIGTSTP was also challenging to handle correctly, so that a process can be moved to the foreground and background an arbitrary number of times.  We decided to expand the background job struct as well as the commandT struct in order to store more information, making it easier to keep track of the status and invoking command of a given process.  
 .SH AUTHOR
 Alex Zylman, amz716, azylman@u.northwestern.edu
+
+Matthew Markwell, mrm297, matthewmarkwell3.2012@u.northwestern.edu
