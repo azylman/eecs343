@@ -73,18 +73,6 @@
 #define NBUILTINCOMMANDS (sizeof BuiltInCommands / sizeof(char*))
 #define BUFSIZE 512
 
-typedef struct bgjob_l
-{
-	pid_t pid;
-	struct bgjob_l* next;
-	char* name;
-	int jid;
-	char* status;
-} bgjobL;
-
-/* the pids of the background processes */
-bgjobL *bgjobs = NULL;
-
 /************Function Prototypes******************************************/
 /* run command */
 static void
@@ -123,8 +111,6 @@ void
 ChangeStdOutToFid(int fid);
 bgjobL*
 CreateJob(int pid, char* name, char* status);
-void
-RemoveJob(int pid);
 int
 GetNextJobNumber();
 bgjobL*
@@ -891,10 +877,10 @@ GetJob(int jid) {
 	bgjobL* curr = bgjobs;
 	
 	while (curr != NULL) {
-		curr = curr->next;
 		if (curr->jid == jid) {
 			break;
 		}
+		curr = curr->next;
 	}
 
 	return curr;

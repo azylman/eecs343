@@ -17,6 +17,7 @@
 #include <string.h>
 #include <unistd.h>
 #include <sys/param.h>
+#include <sys/wait.h>
 
 /************Private include**********************************************/
 #include "tsh.h"
@@ -75,18 +76,30 @@ int main(int argc, char *argv[])
 		/* read command line */
 		getCommandLine(&cmdLine, BUFSIZE);
 
+		if (strcmp(cmdLine, "exit") == 0)
+			forceExit = TRUE;
+		
 		/* checks the status of background jobs */
-		CheckJobs();
+		if (!forceExit) {
+			CheckJobs();
+		}
 
 		/* interpret command and line
 		 * includes executing of commands */
 		Interpret(cmdLine);
 
-		if (strcmp(cmdLine, "exit") == 0)
-			forceExit = TRUE;
 	}
 
-	
+	bgjobL* curr = bgjobs;
+	while (curr != NULL) {
+		curr = bgjobs;
+		int status;
+		int res = waitpid(curr->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
+		if (!(res == curr->pid && !WIFCONTINUED(status))) {
+			kill(curr->pid, SIGKILL);
+		}
+		RemoveJob(curr->jid);
+	}
 	
 	/* shell termination */
 	free(cmdLine);
@@ -114,7 +127,8 @@ sig(int signo) {
 	} else {
 		if (fgCid != 0) {
 			kill(-fgCid, SIGSTOP);
-			AddJob(fgCid, fgCmd, "Stopped");
+			int jid = AddJob(fgCid, fgCmd, "Stopped");
+			printf("[%i]\t%s\t\t%s\n", jid, "Stopped", fgCmd);
 		}
 	}
 } /* sig */

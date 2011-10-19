@@ -62,6 +62,15 @@ typedef struct command_t {
 	char* argv[];
 } commandT;
 
+typedef struct bgjob_l
+{
+	pid_t pid;
+	struct bgjob_l* next;
+	char* name;
+	int jid;
+	char* status;
+} bgjobL;
+
 /************Global Variables*********************************************/
 
 /***********************************************************************
@@ -79,6 +88,7 @@ VAREXTERN(bool forceExit, FALSE);
  ***********************************************************************/
 VAREXTERN(int fgCid, 0);
 VAREXTERN(char* fgCmd, NULL);
+VAREXTERN(bgjobL *bgjobs, NULL);
 
 /************Function Prototypes******************************************/
 
@@ -193,6 +203,8 @@ CheckJobs();
 
 EXTERN int
 AddJob(int, char*, char*);
+EXTERN void
+RemoveJob(int pid);
 /************External Declaration*****************************************/
 
 /**************Definition***************************************************/
