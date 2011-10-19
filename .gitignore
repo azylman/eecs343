@@ -1,2 +1,4 @@
 gmon.out
 *.o
+tsh
+*.swp
