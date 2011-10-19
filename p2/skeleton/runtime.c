@@ -917,7 +917,21 @@ char* createStringFromArgumentList(char* argv[], int start, int end) {
 	int i;
 	for (i = start + 1; argv[i] != 0 && i < end; ++i) {
 		strcat(string, " ");
+		int j;
+		bool hasSpaces = FALSE;
+		for (j = 0; argv[i][j] != 0; ++j) {
+			if (argv[i][j] == ' ') {
+				hasSpaces = TRUE;
+				break;
+			}
+		}
+		if (hasSpaces) {
+			strcat(string, "\"");
+		}
 		strcat(string, argv[i]);
+		if (hasSpaces) {
+			strcat(string, "\"");
+		}
 	}
 	return string;
 }
