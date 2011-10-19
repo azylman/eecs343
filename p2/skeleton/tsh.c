@@ -105,9 +105,14 @@ int main(int argc, char *argv[])
  */
 static void
 sig(int signo) {
-	// If there is a foreground child
-	if (fgCid != 0) {
-		// Send SIGINT to it
-		kill(-fgCid, SIGINT);
+	if (signo == SIGINT) {
+		// If there is a foreground child
+		if (fgCid != 0) {
+			// Send SIGINT to it
+			kill(-fgCid, SIGINT);
+		}
+	} else {
+		kill(-fgCid, SIGSTOP);
+		AddJob(fgCid, fgCmd, "Stopped");
 	}
 } /* sig */

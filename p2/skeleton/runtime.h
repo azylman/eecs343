@@ -78,6 +78,7 @@ VAREXTERN(bool forceExit, FALSE);
 				 0 if there is no foreground child.
  ***********************************************************************/
 VAREXTERN(int fgCid, 0);
+VAREXTERN(char* fgCmd, NULL);
 
 /************Function Prototypes******************************************/
 
@@ -190,6 +191,8 @@ getLogin();
 EXTERN void
 CheckJobs();
 
+EXTERN int
+AddJob(int, char*, char*);
 /************External Declaration*****************************************/
 
 /**************Definition***************************************************/

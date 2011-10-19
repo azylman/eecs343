@@ -121,10 +121,8 @@ void
 ChangeStdOut(char* filePath);
 void
 ChangeStdOutToFid(int fid);
-int
-AddJob(int pid, commandT* cmd);
 bgjobL*
-CreateJob(int pid, commandT* cmd);
+CreateJob(int pid, char* name, char* status);
 void
 RemoveJob(int pid);
 int
@@ -265,7 +263,7 @@ RunCmdBg(commandT* cmd) {
 			RunExternalCmd(cmd, FALSE);
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 		} else { // parent
-			printf("[%i] %i\n", AddJob(cpid, cmd), cpid);
+			printf("[%i] %i\n", AddJob(cpid, createStringFromArgumentList(cmd->argv, 0, cmd->argc), "Running"), cpid);
 			sigprocmask(SIG_UNBLOCK, &x, NULL);
 		}
 	}
@@ -453,10 +451,12 @@ Exec(commandT* cmd, bool forceFork) {
 				perror("exec failed");
 			} else { // parent
 				fgCid = cpid;
+				fgCmd = createStringFromArgumentList(cmd->argv, 0, cmd->argc);
 				int* stat = 0;
 				sigprocmask(SIG_UNBLOCK, &x, NULL);
-				waitpid(cpid, stat, 0);
+				waitpid(cpid, stat, WUNTRACED);
 				fgCid = 0;
+				fgCmd = NULL;
 			}
 		}
 	}
@@ -636,10 +636,13 @@ RunBuiltInCmd(commandT* cmd) {
 		
 		tcsetpgrp(curr->pid, STDIN_FILENO);
 		fgCid = curr->pid;
+		fgCmd = curr->name;
 		RemoveJob(curr->jid);
-		int* stat = 0;
-		waitpid(fgCid, stat, 0);
+		kill(-fgCid, SIGCONT);
+		int* status = 0;
+		waitpid(fgCid, status, WUNTRACED);
 		fgCid = 0;
+		fgCmd = NULL;
 		return;
 	}
 	
@@ -678,10 +681,20 @@ void
 CheckJobs() {
 	bgjobL* curr = bgjobs;
 	while (curr != NULL) {
-		int* status = malloc(sizeof(int));
-		if (waitpid(curr->pid, status, WNOHANG | WUNTRACED) != 0) {
-			RemoveJob(curr->jid);
-			free(status);
+		int status;
+		int res = waitpid(curr->pid, &status, WNOHANG | WUNTRACED | WCONTINUED);
+		if (res == curr->pid) {
+			if (WIFCONTINUED(status)) {
+				curr->status = "Running";
+			} else {
+				RemoveJob(curr->jid);
+			}
+		} else {
+			if (res == 0) {
+				// child is running or stopped (no change)
+			} else {
+				// there is an error
+			}
 		}
 		curr = curr->next;
 	}
@@ -804,10 +817,10 @@ void ChangeStdOutToFid(int fid) {
 	dup2(fid, 1);
 }
 
-int AddJob(int pid, commandT* cmd) {
+int AddJob(int pid, char* name, char* status) {
 	bgjobL* curr = bgjobs;
 	if (curr == NULL) {
-		bgjobs = CreateJob(pid, cmd);
+		bgjobs = CreateJob(pid, name, status);
 		return bgjobs->jid;
 	}
 	
@@ -815,18 +828,18 @@ int AddJob(int pid, commandT* cmd) {
 		curr = curr->next;
 	}
 	
-	curr->next = CreateJob(pid, cmd);
+	curr->next = CreateJob(pid, name, status);
 	
 	return curr->next->jid;
 }
 
-bgjobL* CreateJob(int pid, commandT* cmd) {
+bgjobL* CreateJob(int pid, char* name, char* status) {
 	bgjobL* job = malloc(sizeof(bgjobL));
 	job->pid = pid;
 	job->next = NULL;
-	job->name = createStringFromArgumentList(cmd->argv, 0, cmd->argc);
+	job->name = name;
 	job->jid = GetNextJobNumber();
-	job->status = "Running";
+	job->status = status;
 	return job;
 }
 
