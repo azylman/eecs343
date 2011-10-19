@@ -71,11 +71,7 @@ int MAXARGS = 100;
 
 /**************Function Prototypes******************************************/
 
-commandT*
-getCommand(char* cmdLine);
 
-void
-freeCommand(commandT* cmd);
 
 /**************Implementation***********************************************/
 

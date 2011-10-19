@@ -108,6 +108,6 @@ sig(int signo) {
 	// If there is a foreground child
 	if (fgCid != 0) {
 		// Send SIGINT to it
-		kill(fgCid, SIGINT);
+		kill(-fgCid, SIGINT);
 	}
 } /* sig */

@@ -30,6 +30,8 @@
 #include "config.h"
 #endif
 
+#include "runtime.h"
+
 /************System include***********************************************/
 
 /************Private include**********************************************/
@@ -62,6 +64,12 @@
  ***********************************************************************/
 EXTERN void
 Interpret(char*);
+
+EXTERN void
+freeCommand(commandT*);
+
+EXTERN commandT*
+getCommand(char*);
 
 /************External Declaration*****************************************/
 

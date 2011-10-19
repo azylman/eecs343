@@ -59,6 +59,7 @@
 /************Private include**********************************************/
 #include "runtime.h"
 #include "io.h"
+#include "interpreter.h"
 
 /************Defines and Typedefs*****************************************/
 /*	#defines and typedefs should have their names in all caps.
@@ -131,6 +132,10 @@ bgjobL*
 GetJob(int jid);
 bgjobL*
 GetLastJob();
+void
+splitCmd(commandT* cmd, int splitIndex, commandT** cmd1, commandT** cmd2);
+char*
+createStringFromArgumentList(char* argv[], int start, int end);
 /************External Declaration*****************************************/
 
 /**************Implementation***********************************************/
@@ -200,9 +205,25 @@ void
 RunCmdFork(commandT* cmd, bool fork) {
 	if (cmd->argc <= 0)
 		return;
-		
+	
+	int i;
 	// If there's a |, call RunCmdPipe with the left and right halves
-		
+	for (i = 0; i < cmd->argc; ++i) {
+		if (*cmd->argv[i] == '|') {
+			commandT** cmd1p = malloc(sizeof(commandT*));
+			commandT** cmd2p = malloc(sizeof(commandT*));
+			
+			splitCmd(cmd, i, cmd1p, cmd2p);
+			
+			commandT* cmd1 = *cmd1p;
+			commandT* cmd2 = *cmd2p;
+			free(cmd1p);
+			free(cmd2p);
+			RunCmdPipe(cmd1, cmd2);
+			return;
+		}
+	}
+	
 	if (IsBuiltIn(cmd->argv[0])) {
 		RunBuiltInCmd(cmd);
 	} else {
@@ -267,21 +288,53 @@ RunCmdBg(commandT* cmd) {
  */
 void
 RunCmdPipe(commandT* cmd1, commandT* cmd2) {
-	// save file descripts
-	// create our pipe
-	// set file descriptors to pipe
-	// fork once for cmd1
-	//		IN CHILD:
-	//			close the unused end of the pipe (read end)
-	//			RunExternalCmd(unforked)
-	// 		IN PARENT:
-	//			fork AGAIN for cmd2
-	//			IN CHILD:
-	//				close the unused end of the pipe (write end)
-	// 				RunCmdFork(unforked);
-	//			IN PARENT:
-	// 				restore file descriptors
-	//				wait on cmd1 child
+	int cpid1;
+	int cpid2;
+	int pipeId[2];
+	
+	if (pipe(pipeId) < 0) {
+		perror("pipe creation failed");
+	}
+	
+	if ((cpid1 = fork()) < 0){
+		perror("fork failed");
+	} else {
+		if (cpid1 == 0) { // child
+			//ChangeStdInToFid(pipeId[0]);
+			ChangeStdOutToFid(pipeId[1]);
+			close(pipeId[0]);
+			if (fgCid == 0) {
+				setpgid(0, 0);
+			} else {
+				setpgid(0, fgCid);
+			}
+			RunExternalCmd(cmd1, FALSE);
+		} else { // parent
+			if (fgCid == 0) {
+				fgCid = cpid1;
+			}
+			if ((cpid2 = fork()) < 0){
+				perror("fork failed");
+			} else {
+				if (cpid2 == 0) { // child
+					ChangeStdInToFid(pipeId[0]);
+					close(pipeId[1]);
+					setpgid(0, fgCid);
+					RunCmdFork(cmd2, FALSE);
+				} else { // parent
+					close(pipeId[0]);
+					close(pipeId[1]);
+					int* stat = 0;
+					waitpid(cpid1, stat, 0);
+					waitpid(cpid2, stat, 0);
+					fgCid = 0;
+				}
+			}
+		}
+	}
+	
+	freeCommand(cmd1);
+	freeCommand(cmd2);
 } /* RunCmdPipe */
 
 
@@ -766,13 +819,7 @@ bgjobL* CreateJob(int pid, commandT* cmd) {
 	bgjobL* job = malloc(sizeof(bgjobL));
 	job->pid = pid;
 	job->next = NULL;
-	job->name = malloc(sizeof(char) * BUFSIZE);
-	strcpy(job->name, cmd->argv[0]);
-	int i;
-	for (i = 1; i < cmd->argc; ++i) {
-		strcat(job->name, " ");
-		strcat(job->name, cmd->argv[i]);
-	}
+	job->name = createStringFromArgumentList(cmd->argv, 0, cmd->argc);
 	job->jid = GetNextJobNumber();
 	return job;
 }
@@ -839,4 +886,25 @@ GetLastJob() {
 		curr = curr->next;
 	}
 	return curr;
+}
+
+void
+splitCmd(commandT* cmd, int splitIndex, commandT** cmd1, commandT** cmd2) {
+	char* string1 = createStringFromArgumentList(cmd->argv, 0, splitIndex);
+	char* string2 = createStringFromArgumentList(cmd->argv, splitIndex + 1, cmd->argc);
+	*cmd1 = getCommand(string1);
+	*cmd2 = getCommand(string2);
+	free(string1);
+	free(string2);
+}
+
+char* createStringFromArgumentList(char* argv[], int start, int end) {
+	char* string = malloc(sizeof(char) * BUFSIZE);
+	strcpy(string, argv[start]);
+	int i;
+	for (i = start + 1; argv[i] != 0 && i < end; ++i) {
+		strcat(string, " ");
+		strcat(string, argv[i]);
+	}
+	return string;
 }
