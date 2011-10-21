@@ -1,5 +1,5 @@
 CC=gcc
-CFLAGS=-O3 -Wall -Wextra -Werror -pg
+CFLAGS=-O3 -Wall -Wextra -Werror -pg -g
 
 all: life.o tools.o
 	$(CC) $(CFLAGS) life.o tools.o -o life
