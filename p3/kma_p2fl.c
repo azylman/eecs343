@@ -71,6 +71,7 @@ typedef struct
 
 typedef struct
 {
+	kpage_t* page_info;
 	free_list_info bytes32;
 	free_list_info bytes64;
 	free_list_info bytes128;
@@ -80,6 +81,7 @@ typedef struct
 	free_list_info bytes2048;
 	free_list_info bytes4096;
 	free_list_info bytes8192;
+	int numAllocatedPages;
 } free_list_pointers;
 
 typedef struct
@@ -115,7 +117,7 @@ kma_malloc(kma_size_t size)
 	int adjusted_size = size + sizeof(void*);
 	if (adjusted_size < 32) {
 		free_list_info* free_list = &free_lists->bytes32;
-		
+
 		get_space_if_needed(free_list, 32);
 		
 		return get_next_buffer(free_list);
@@ -202,9 +204,27 @@ kma_free(void* ptr, kma_size_t size)
 	free_list->next_buffer = aBuffer;
 	if (debug) printf("Set first free buffer\n");
 
+	free_list_pointers* free_lists = (free_list_pointers*)entry_point->ptr;
+	
+	if (debug) printf("Our number of allocated buffers went from %i ", free_list->numAllocatedBuffers);
 	free_list->numAllocatedBuffers--;
+	if (debug) printf("to %i\n", free_list->numAllocatedBuffers);
 	if (free_list->numAllocatedBuffers == 0) {
-		// free some shit
+	
+		printf("First page: %p\n", free_list->first_page);
+		page_header_info* cur_page = free_list->first_page;
+		while (cur_page != 0) {
+			kpage_t* page = cur_page->page_info;
+			cur_page = cur_page->next_page;
+			free_lists->numAllocatedPages--;
+			free_page(page);
+		}
+		free_list->first_page = 0;
+	}
+	
+	if (free_lists->numAllocatedPages == 0) {
+		free_page(entry_point);
+		entry_point = 0;
 	}
 }
 
@@ -212,6 +232,8 @@ kpage_t* get_entry_point() {
 	if (debug) printf("Getting entry point\n");
 	kpage_t* entry_point = get_page();
 	free_list_pointers* free_lists = (free_list_pointers*)entry_point->ptr;
+	
+	free_lists->page_info = entry_point;
 	
 	free_lists->bytes32.next_buffer = 0;
 	free_lists->bytes32.numAllocatedBuffers = 0;
@@ -249,10 +271,15 @@ kpage_t* get_entry_point() {
 	free_lists->bytes8192.numAllocatedBuffers = 0;
 	free_lists->bytes8192.first_page = 0;
 	
+	free_lists->numAllocatedPages = 0;
+	
 	return entry_point;
 }
 
 void* get_next_buffer(free_list_info* free_list) {
+
+	free_list->numAllocatedBuffers++;
+
 	if (debug) printf("Get buffer\n");
 	buffer* aBuffer = free_list->next_buffer;
 	if (debug) printf("Set free list pointer\n");
@@ -269,7 +296,9 @@ void get_space_if_needed(free_list_info* free_list, int size) {
 		if (debug) printf("Get new page ");
 		kpage_t* page = get_page();
 		
-		free_list->numAllocatedBuffers++;
+		free_list_pointers* free_lists = (free_list_pointers*)entry_point->ptr;
+		
+		free_lists->numAllocatedPages++;
 		
 		page_header_info* page_header = (page_header_info*)page->ptr;
 		page_header->page_info = page;
