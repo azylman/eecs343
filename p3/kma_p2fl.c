@@ -38,7 +38,6 @@
  ***************************************************************************/
 #ifdef KMA_P2FL
 #define __KMA_IMPL__
-
 /************System include***********************************************/
 #include <assert.h>
 #include <stdlib.h>
@@ -89,10 +88,11 @@ typedef struct
 
 // Entry point into data structures.
 static kpage_t* entry_point = 0;
+static int debug = 0;
 
 void*
 kma_malloc(kma_size_t size)
-{	
+{
 	printf("REQUEST %i\n", size);
 	if (entry_point == 0) {
 		entry_point = get_entry_point();
@@ -171,9 +171,10 @@ kma_malloc(kma_size_t size)
 		get_space_if_needed(free_list, 8192);
 		
 		return get_next_buffer(free_list);
-	} else { // If the size we're given is bigger than the size of a page.
-		return NULL;
 	}
+	
+	// If the size we're given is bigger than the size of a page.
+	return NULL;
 }
 
 void
@@ -181,16 +182,17 @@ kma_free(void* ptr, kma_size_t size)
 {
 	printf("FREE %i\n", size);
 	buffer* aBuffer = (buffer*)(ptr - sizeof(void*));
-	printf("Create buffer\n");
+	if (debug) printf("Create buffer\n");
 	void** free_list = aBuffer->header;
-	printf("Get free list\n");
+	if (debug) printf("Get free list\n");
 	aBuffer->header = *free_list;
-	printf("Set buffer header\n");
+	if (debug) printf("Set buffer header\n");
 	*free_list = aBuffer;
-	printf("Set first free buffer\n");
+	if (debug) printf("Set first free buffer\n");
 }
 
 kpage_t* get_entry_point() {
+	if (debug) printf("Getting entry point\n");
 	kpage_t* entry_point = get_page();
 	free_list_pointers* free_lists = (free_list_pointers*)entry_point->ptr;
 	free_lists->bytes32 = 0;
@@ -206,31 +208,43 @@ kpage_t* get_entry_point() {
 }
 
 void* get_next_buffer(void** free_list) {
-	printf("Get buffer\n");
+	if (debug) printf("Get buffer\n");
 	buffer* aBuffer = (buffer*)(*free_list);
-	printf("Set free list pointer\n");
+	if (debug) printf("Set free list pointer\n");
+	if (debug) printf("Old free list starting point: %p, new: %p\n", *free_list, (aBuffer + sizeof(void*)));
 	*free_list = aBuffer->header;
-	printf("Set buffer header\n");
+	if (debug) printf("Set buffer header\n");
 	aBuffer->header = free_list;
-	return &(aBuffer->data);	
+	return &(aBuffer->data);
 }
 
 void get_space_if_needed(void** free_list, int size) {
-	printf("Checking %i-byte free list\n", size);
+	if (debug) printf("Checking %i-byte free list\n", size);
 	if (*free_list == 0) { // If there is no free buffer
-		printf("Get new page\n");
+		if (debug) printf("Get new page ");
 		kpage_t* page = get_page();
-		*free_list = page->ptr;
-		int numBuffers = PAGESIZE / size;
+		*((kpage_t**)page->ptr) = page;
+		*free_list = page->ptr + sizeof(kpage_t*);
+		int numBuffers = (page->size - sizeof(kpage_t*)) / size;
+		if (debug) printf("of size %i at %p with %i buffers\n", page->size, *free_list, numBuffers);
 		int i;
+		buffer* aBuffer = 0;
 		for (i = 0; i < numBuffers; i++) {
-			buffer* aBuffer = (buffer*)(*free_list + i * size);
-			
-			if (i == numBuffers - 1) {
-				aBuffer->header = 0;
-			} else {
-				aBuffer->header = aBuffer + size;
+			aBuffer = (*free_list + i * size);
+			if (debug) printf("Buffer %i starts at %p ", i + 1, aBuffer);
+			aBuffer->header = aBuffer + size/sizeof(buffer);
+			if (debug) printf("and points to %p\n", aBuffer->header);
+		}
+		aBuffer->header = 0;
+		
+		if (debug) {
+			printf("Printing new buffer list of size %i...\n", size);
+			printf("%p ", *free_list);
+			for (i = 0; i < numBuffers; i++) {
+				aBuffer = (*free_list + i * size);
+				printf("%p ", aBuffer->header);
 			}
+			printf("\n");
 		}
 	}
 }
