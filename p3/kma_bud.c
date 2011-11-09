@@ -109,12 +109,12 @@ void* splitBuffer(buffer*, int);
 
 // Entry point into data structures.
 static kpage_t* entryPoint = 0;
-static int debug = 0;
+static int debug = 1;
 
 void*
 kma_malloc(kma_size_t size)
 {
-	printf("REQUEST %i\n", size);
+	printf("\nREQUEST %i\n", size);
 	if (entryPoint == 0) {
 		entryPoint = getEntryPoint();
 	}
@@ -287,13 +287,8 @@ void* getNextBuffer(freeListInfo* freeList) {
 
 	freeList->numAllocatedBuffers++;
 
-	if (debug) printf("Get buffer\n");
-	buffer* aBuffer = freeList->nextBuffer;
-	if (debug) printf("Set free list pointer\n");
-	if (debug) printf("Old free list starting point: %p, new: %p\n", freeList->nextBuffer, aBuffer->header);
-	freeList->nextBuffer = aBuffer->header;
-	if (debug) printf("Set buffer header\n");
-	aBuffer->header = freeList;
+	buffer* aBuffer = removeFirstBuffer(freeList);
+	if (debug) printf("Returning %p as the result of malloc\n", aBuffer);
 	return &(aBuffer->data);
 }
 
@@ -301,12 +296,15 @@ void getSpaceIfNeeded(freeListInfo* freeList, int size) {
 	if (debug) printf("Checking %i-byte free list\n", size);
 	
 	if (freeList->nextBuffer == 0) { // If there is no free buffer
+		if (debug) printf("Need to split to get a buffer of size %i\n", size);
 		splitLargerList(size);
 	}
 }
 
 void addBufferToFreeList(buffer* aBuffer, freeListInfo* freeList) {
+	if (debug) printf("Adding a buffer %p to the free list %p ", aBuffer, freeList);
 	aBuffer->header = freeList->nextBuffer;
+	if (debug) printf("and setting its header to %p\n", aBuffer->header);
 	freeList->nextBuffer = aBuffer;
 }
 
@@ -321,63 +319,87 @@ void splitLargerList(int size) {
 	if (size == 32) {
 		freeListInfo* freeList = &freeLists->bytes64;
 		freeListInfo* smallFreeList = &freeLists->bytes32;
-		if (freeList->nextBuffer == 0) splitLargerList(64);
+		if (freeList->nextBuffer == 0) {
+			//if (debug) printf("Splitting %i into %i\n", size*2, size);
+			splitLargerList(64);
+		}
 		splitLargeBufferToSmallBuffer(freeList, smallFreeList, 32);
 	}
 	
 	if (size == 64) {
 		freeListInfo* freeList = &freeLists->bytes128;
 		freeListInfo* smallFreeList = &freeLists->bytes64;
-		if (freeList->nextBuffer == 0) splitLargerList(128);
+		if (freeList->nextBuffer == 0) {
+			//if (debug) printf("Splitting %i into %i\n", size*2, size);
+			splitLargerList(128);
+		}
 		splitLargeBufferToSmallBuffer(freeList, smallFreeList, 64);
 	}
 	
 	if (size == 128) {
 		freeListInfo* freeList = &freeLists->bytes256;
 		freeListInfo* smallFreeList = &freeLists->bytes128;
-		if (freeList->nextBuffer == 0) splitLargerList(256);
+		if (freeList->nextBuffer == 0) {
+			//if (debug) printf("Splitting %i into %i\n", size*2, size);
+			splitLargerList(256);
+		}
 		splitLargeBufferToSmallBuffer(freeList, smallFreeList, 128);
 	}
 	
 	if (size == 256) {
 		freeListInfo* freeList = &freeLists->bytes512;
 		freeListInfo* smallFreeList = &freeLists->bytes256;
-		if (freeList->nextBuffer == 0) splitLargerList(512);
+		if (freeList->nextBuffer == 0) {
+			//if (debug) printf("Splitting %i into %i\n", size*2, size);
+			splitLargerList(512);
+		}
 		splitLargeBufferToSmallBuffer(freeList, smallFreeList, 256);
 	}
 	
 	if (size == 512) {
 		freeListInfo* freeList = &freeLists->bytes1024;
 		freeListInfo* smallFreeList = &freeLists->bytes512;
-		if (freeList->nextBuffer == 0) splitLargerList(1024);
+		if (freeList->nextBuffer == 0) {
+			//if (debug) printf("Splitting %i into %i\n", size*2, size);
+			splitLargerList(1024);
+		}
 		splitLargeBufferToSmallBuffer(freeList, smallFreeList, 512);
 	}
 	
 	if (size == 1024) {
 		freeListInfo* freeList = &freeLists->bytes2048;
 		freeListInfo* smallFreeList = &freeLists->bytes1024;
-		if (freeList->nextBuffer == 0) splitLargerList(2048);
+		if (freeList->nextBuffer == 0) {
+			//if (debug) printf("Splitting %i into %i\n", size*2, size);
+			splitLargerList(2048);
+		}
 		splitLargeBufferToSmallBuffer(freeList, smallFreeList, 1024);
 	}
 	
 	if (size == 2048) {
 		freeListInfo* freeList = &freeLists->bytes4096;
 		freeListInfo* smallFreeList = &freeLists->bytes2048;
-		if (freeList->nextBuffer == 0) splitLargerList(4096);
+		if (freeList->nextBuffer == 0) {
+			//if (debug) printf("Splitting %i into %i\n", size*2, size);
+			splitLargerList(4096);
+		}
 		splitLargeBufferToSmallBuffer(freeList, smallFreeList, 2048);
 	}
 	
 	if (size == 4096) {
 		freeListInfo* freeList = &freeLists->bytes8192;
 		freeListInfo* smallFreeList = &freeLists->bytes4096;
-		if (freeList->nextBuffer == 0) splitLargerList(8192);
+		if (freeList->nextBuffer == 0) {
+			//if (debug) printf("Splitting %i into %i\n", size*2, size);
+			splitLargerList(8192);
+		}
 		splitLargeBufferToSmallBuffer(freeList, smallFreeList, 4096);
 	}
 	
 	if (size == 8192) {
 		freeListInfo* freeList = &freeLists->bytes8192;
 		if (freeList->nextBuffer == 0) {
-			if (debug) printf("Get new page ");
+			printf("Getting a new page\n");
 			kpage_t* page = get_page();
 			
 			freeListPointers* freeLists = (freeListPointers*)entryPoint->ptr;
@@ -395,33 +417,21 @@ void splitLargerList(int size) {
 			int numBuffers = (page->size - sizeof(pageHeaderInfo)) / size;
 			numBuffers = numBuffers == 0 ? 1 : numBuffers;
 			
-			if (debug) printf("of size %i at %p with %i buffers\n", page->size, freeList->nextBuffer, numBuffers);
-			
 			int i;
 			buffer* aBuffer = 0;
 			for (i = 0; i < numBuffers; i++) {
 				aBuffer = (pageBegin + i * size);
-				if (debug) printf("Buffer %i starts at %p ", i + 1, aBuffer);
 				aBuffer->header = 0;
-				if (debug) printf("and points to %p\n", aBuffer->header);
 				addBufferToFreeList(aBuffer, freeList);
-			}
-			
-			if (debug) {
-				printf("Printing new buffer list of size %i...\n", size);
-				printf("%p ", freeList->nextBuffer);
-				for (i = 0; i < numBuffers; i++) {
-					aBuffer = (freeList->nextBuffer + i * size);
-					printf("%p ", aBuffer->header);
-				}
-				printf("\n");
 			}
 		}
 	}	
 }
 
 void splitLargeBufferToSmallBuffer(freeListInfo* largeFreeList, freeListInfo* smallFreeList, int size) {
+	if (debug) printf("Splitting a %i buffer into two %i buffers\n", size*2, size);
 	buffer* largeBuffer = removeFirstBuffer(largeFreeList);
+	if (debug) printf("Begin splitting to add to %p...\n", smallFreeList);
 	buffer* smallBuffer = splitBuffer(largeBuffer, size);
 	addBufferToFreeList(smallBuffer, smallFreeList);
 	addBufferToFreeList(smallBuffer->buddy, smallFreeList);
@@ -429,16 +439,23 @@ void splitLargeBufferToSmallBuffer(freeListInfo* largeFreeList, freeListInfo* sm
 
 
 void* removeFirstBuffer(freeListInfo* freeList) {
+	printf("test1\n");
+	if (debug) printf("From free list %p, ", freeList);
+	printf("test1\n");
 	buffer* aBuffer = freeList->nextBuffer;
+	if (debug) printf("getting buffer %p and ", aBuffer);
 	freeList->nextBuffer = aBuffer->header;
+	if (debug) printf("updating the list to point to %p\n", freeList->nextBuffer);
 	return aBuffer;
 }
 
 void* splitBuffer(buffer* largeBuffer, int size) {
-	largeBuffer->buddy = largeBuffer + size/sizeof(freeListInfo);
+	largeBuffer->buddy = largeBuffer + size/sizeof(buffer);
 	largeBuffer->buddy->buddy = largeBuffer;
 	
-	largeBuffer->isAllocated = 0;	
+	if (debug) printf("Splitting %p into %p and %p which points to %p\n", largeBuffer, largeBuffer, largeBuffer->buddy, largeBuffer->buddy->buddy);
+	
+	largeBuffer->isAllocated = 0;
 	largeBuffer->buddy->isAllocated = 0;
 	return largeBuffer;
 }
