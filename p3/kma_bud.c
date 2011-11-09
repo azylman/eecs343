@@ -41,6 +41,7 @@
 /************System include***********************************************/
 #include <assert.h>
 #include <stdlib.h>
+#include <stdio.h>
 
 /************Private include**********************************************/
 #include "kpage.h"
