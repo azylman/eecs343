@@ -94,6 +94,7 @@ typedef struct
 kpage_t* get_entry_point();
 void* get_next_buffer(free_list_info*);
 void get_space_if_needed(free_list_info*, int size);
+void add_buffer_to_free_list(buffer*, free_list_info*);
 
 /************External Declaration*****************************************/
 
@@ -197,11 +198,8 @@ kma_free(void* ptr, kma_size_t size)
 	buffer* aBuffer = (buffer*)(ptr - sizeof(void*));
 	if (debug) printf("Create buffer\n");
 	free_list_info* free_list = aBuffer->header;
-	if (debug) printf("Get free list\n");
 	aBuffer->header = free_list->next_buffer;
-	if (debug) printf("Set buffer header\n");
-	free_list->next_buffer = aBuffer;
-	if (debug) printf("Set first free buffer\n");
+	add_buffer_to_free_list(aBuffer, free_list);
 
 	free_list_pointers* free_lists = (free_list_pointers*)entry_point->ptr;
 	
@@ -319,7 +317,9 @@ void get_space_if_needed(free_list_info* free_list, int size) {
 		
 		int numBuffers = (page->size - sizeof(page_header_info)) / size;
 		numBuffers = numBuffers == 0 ? 1 : numBuffers;
+		
 		if (debug) printf("of size %i at %p with %i buffers\n", page->size, free_list->next_buffer, numBuffers);
+		
 		int i;
 		buffer* aBuffer = 0;
 		for (i = 0; i < numBuffers; i++) {
@@ -340,6 +340,11 @@ void get_space_if_needed(free_list_info* free_list, int size) {
 			printf("\n");
 		}
 	}
+}
+
+void add_buffer_to_free_list(buffer* aBuffer, free_list_info* free_list) {
+	aBuffer->header = free_list->next_buffer;
+	free_list->next_buffer = aBuffer;
 }
 
 #endif // KMA_BUD
