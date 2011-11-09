@@ -220,6 +220,7 @@ kma_free(void* ptr, kma_size_t size)
 			free_page(page);
 		}
 		free_list->first_page = 0;
+		free_list->next_buffer = 0;
 	}
 	
 	if (free_lists->numAllocatedPages == 0) {
@@ -283,7 +284,7 @@ void* get_next_buffer(free_list_info* free_list) {
 	if (debug) printf("Get buffer\n");
 	buffer* aBuffer = free_list->next_buffer;
 	if (debug) printf("Set free list pointer\n");
-	if (debug) printf("Old free list starting point: %p, new: %p\n", free_list->next_buffer, (aBuffer + sizeof(void*)));
+	if (debug) printf("Old free list starting point: %p, new: %p\n", free_list->next_buffer, aBuffer->header);
 	free_list->next_buffer = aBuffer->header;
 	if (debug) printf("Set buffer header\n");
 	aBuffer->header = free_list;
@@ -292,6 +293,7 @@ void* get_next_buffer(free_list_info* free_list) {
 
 void get_space_if_needed(free_list_info* free_list, int size) {
 	if (debug) printf("Checking %i-byte free list\n", size);
+	
 	if (free_list->next_buffer == 0) { // If there is no free buffer
 		if (debug) printf("Get new page ");
 		kpage_t* page = get_page();
