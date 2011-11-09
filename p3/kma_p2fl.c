@@ -102,7 +102,7 @@ void get_space_if_needed(free_list_info*, int size);
 
 // Entry point into data structures.
 static kpage_t* entry_point = 0;
-static int debug = 1;
+static int debug = 0;
 
 void*
 kma_malloc(kma_size_t size)
