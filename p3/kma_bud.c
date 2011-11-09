@@ -96,6 +96,9 @@ void* get_next_buffer(free_list_info*);
 void get_space_if_needed(free_list_info*, int size);
 void add_buffer_to_free_list(buffer*, free_list_info*);
 void add_page_to_free_list(page_header_info*, free_list_info*);
+void split_large_buffer_to_small_buffer(free_list_info*, free_list_info*, int size);
+void* remove_first_buffer(free_list_info*);
+void* splitBuffer(free_list_info*, int)
 
 /************External Declaration*****************************************/
 
@@ -293,6 +296,12 @@ void get_space_if_needed(free_list_info* free_list, int size) {
 	if (debug) printf("Checking %i-byte free list\n", size);
 	
 	if (free_list->next_buffer == 0) { // If there is no free buffer
+		free_list_pointers* free_lists = (free_list_pointers*)entry_point->ptr;
+		
+		// check free_list one size up
+		// if it has a free thing, split
+		// else recur
+		
 		if (debug) printf("Get new page ");
 		kpage_t* page = get_page();
 		
@@ -343,6 +352,89 @@ void add_buffer_to_free_list(buffer* aBuffer, free_list_info* free_list) {
 void add_page_to_free_list(page_header_info* page_header, free_list_info* free_list) {
 	page_header->next_page = free_list->first_page;
 	free_list->first_page = page_header;
+}
+
+void split_larger_list(int size) {
+	if (size == 32) {
+		free_list_info* free_list = &free_lists->bytes64;
+		free_list_info* small_free_list = &free_lists->bytes32;
+		if (free_list->next_buffer == 0) split_larger_list(64);
+		split_large_buffer_to_small_buffer(free_list, small_free_list, 32);
+	}
+	
+	if (size == 64) {
+		free_list_info* free_list = &free_lists->bytes128;
+		free_list_info* small_free_list = &free_lists->bytes64;
+		if (free_list->next_buffer == 0) split_larger_list(128);
+		split_large_buffer_to_small_buffer(free_list, small_free_list, 64);
+	}
+	
+	if (size == 128) {
+		free_list_info* free_list = &free_lists->bytes256;
+		free_list_info* small_free_list = &free_lists->bytes128;
+		if (free_list->next_buffer == 0) split_larger_list(256);
+		split_large_buffer_to_small_buffer(free_list, small_free_list, 128);
+	}
+	
+	if (size == 256) {
+		free_list_info* free_list = &free_lists->bytes512;
+		free_list_info* small_free_list = &free_lists->bytes256;
+		if (free_list->next_buffer == 0) split_larger_list(512);
+		split_large_buffer_to_small_buffer(free_list, small_free_list, 256);
+	}
+	
+	if (size == 512) {
+		free_list_info* free_list = &free_lists->bytes1024;
+		free_list_info* small_free_list = &free_lists->bytes512;
+		if (free_list->next_buffer == 0) split_larger_list(1024);
+		split_large_buffer_to_small_buffer(free_list, small_free_list, 512);
+	}
+	
+	if (size == 1024) {
+		free_list_info* free_list = &free_lists->bytes2048;
+		free_list_info* small_free_list = &free_lists->bytes1024;
+		if (free_list->next_buffer == 0) split_larger_list(2048);
+		split_large_buffer_to_small_buffer(free_list, small_free_list, 1024);
+	}
+	
+	if (size == 2048) {
+		free_list_info* free_list = &free_lists->bytes4096;
+		free_list_info* small_free_list = &free_lists->bytes2048;
+		if (free_list->next_buffer == 0) split_larger_list(4096);
+		split_large_buffer_to_small_buffer(free_list, small_free_list, 2048);
+	}
+	
+	if (size == 4096) {
+		free_list_info* free_list = &free_lists->bytes8192;
+		free_list_info* small_free_list = &free_lists->bytes4096;
+		if (free_list->next_buffer == 0) split_larger_list(8192);
+		split_large_buffer_to_small_buffer(free_list, small_free_list, 4096);
+	}
+	
+	if (size == 8192) {
+		free_list_info* free_list = &free_lists->bytes8192;
+		if (free_list->next_buffer == 0) {
+			// get a new page
+		}
+	}	
+}
+
+void split_large_buffer_to_small_buffer(free_list_info* large_free_list, free_list_info* small_free_list, int size) {
+	buffer* largeBuffer = remove_first_buffer(large_free_list);
+	buffer* smallBuffer = splitBuffer(largeBuffer, size);
+	add_buffer_to_free_list(smallBuffer->header, small_free_list);
+	add_buffer_to_free_list(smallBuffer, small_free_list);
+}
+
+
+void* remove_first_buffer(free_list_info* free_list) {
+	buffer* aBuffer = free_list->next_buffer;
+	free_list->next_buffer = aBuffer->header;
+	return aBuffer;
+}
+
+void* splitBuffer(free_list_info* largeBuffer, int size) {
+	largeBuffer->header = largeBuffer + size/sizeof(file_list_info);
 }
 
 #endif // KMA_BUD
