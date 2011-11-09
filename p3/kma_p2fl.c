@@ -318,7 +318,8 @@ void get_space_if_needed(free_list_info* free_list, int size) {
 		
 		free_list->next_buffer = page->ptr + sizeof(page_header_info);
 		
-		int numBuffers = (page->size - sizeof(kpage_t*)) / size;
+		int numBuffers = (page->size - sizeof(page_header_info)) / size;
+		numBuffers = numBuffers == 0 ? 1 : numBuffers;
 		if (debug) printf("of size %i at %p with %i buffers\n", page->size, free_list->next_buffer, numBuffers);
 		int i;
 		buffer* aBuffer = 0;
