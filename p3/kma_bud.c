@@ -141,44 +141,13 @@ kma_malloc(kma_size_t size)
 void
 kma_free(void* ptr, kma_size_t size)
 {
-	printf("FREE %i\n", size);
+	printf("\nFREE %i\n", size);
 	buffer* aBuffer = (buffer*)(ptr - sizeof(buffer) + sizeof(void*));
 	aBuffer->isAllocated = 0;
 	freeListInfo* freeList = aBuffer->header;
 	addBufferToFreeList(aBuffer, freeList);
 	
 	coalesceIfNecessary(aBuffer);
-	
-	/*
-	if (debug) printf("Create buffer\n");
-	freeListInfo* freeList = aBuffer->header;
-	aBuffer->header = freeList->nextBuffer;
-	addBufferToFreeList(aBuffer, freeList);
-
-	freeListPointers* freeLists = (freeListPointers*)entryPoint->ptr;
-	
-	if (debug) printf("Our number of allocated buffers went from %i ", freeList->numAllocatedBuffers);
-	freeList->numAllocatedBuffers--;
-	if (debug) printf("to %i\n", freeList->numAllocatedBuffers);
-	if (freeList->numAllocatedBuffers == 0) {
-	
-		printf("First page: %p\n", freeList->firstPage);
-		pageHeaderInfo* curPage = freeList->firstPage;
-		while (curPage != 0) {
-			kpage_t* page = curPage->pageInfo;
-			curPage = curPage->nextPage;
-			freeLists->numAllocatedPages--;
-			free_page(page);
-		}
-		freeList->firstPage = 0;
-		freeList->nextBuffer = 0;
-	}
-	
-	if (freeLists->numAllocatedPages == 0) {
-		free_page(entryPoint);
-		entryPoint = 0;
-	}
-	*/
 }
 
 void coalesceIfNecessary(buffer* aBuffer) {
@@ -186,8 +155,6 @@ void coalesceIfNecessary(buffer* aBuffer) {
 	buffer* buddy = getBuddy(aBuffer);
 	
 	if (!buddy->isAllocated && buddy->size == aBuffer->size) {
-		printf("Coalescing\n");
-		
 		freeListInfo* freeList = getFreeList(buddy->size);
 		removeBufferFromFreeList(buddy, freeList);
 		removeBufferFromFreeList(aBuffer, freeList);
@@ -196,10 +163,11 @@ void coalesceIfNecessary(buffer* aBuffer) {
 
 		parent->size = parent->size*2;
 		if (parent->size == 8192) {
-			printf("Coalesced to max size\n");
+			if (debug) printf("Coalesced to max size\n");
 			freeListPointers* freeLists = (freeListPointers*)entryPoint->ptr;
 
-			pageHeaderInfo* pageHeader = (void*)parent->start - sizeof(pageHeaderInfo)/sizeof(pageHeaderInfo);
+			pageHeaderInfo* pageHeader = (void*)parent->start - sizeof(pageHeaderInfo);
+			if (debug) printf("The start is at %p and the page header is at %p\n", parent->start, pageHeader);
 
 			free_page(pageHeader->pageInfo);
 			freeLists->numAllocatedPages--;
