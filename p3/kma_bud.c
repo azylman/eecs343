@@ -152,8 +152,26 @@ kma_free(void* ptr, kma_size_t size)
 
 void coalesceIfNecessary(buffer* aBuffer) {
 
+	if (aBuffer->size == 8192) {
+		removeBufferFromFreeList(aBuffer, getFreeList(aBuffer->size));
+		if (debug) printf("Coalesced to max size\n");
+		freeListPointers* freeLists = (freeListPointers*)entryPoint->ptr;
+
+		pageHeaderInfo* pageHeader = (void*)aBuffer->start - sizeof(pageHeaderInfo);
+		if (debug) printf("The start is at %p and the page header is at %p\n", aBuffer->start, pageHeader);
+
+		free_page(pageHeader->pageInfo);
+		freeLists->numAllocatedPages--;
+		if (freeLists->numAllocatedPages == 0) {
+			free_page(entryPoint);
+			entryPoint = 0;
+		}
+		
+		return;
+	}
+
 	buffer* buddy = getBuddy(aBuffer);
-	
+	if (debug) printf("Trying to coalesce a buffer of size %i\n", aBuffer->size);
 	if (!buddy->isAllocated && buddy->size == aBuffer->size) {
 		freeListInfo* freeList = getFreeList(buddy->size);
 		removeBufferFromFreeList(buddy, freeList);
@@ -184,10 +202,12 @@ void coalesceIfNecessary(buffer* aBuffer) {
 
 buffer* getBuddy(buffer* aBuffer) {
 	buffer* buddy = aBuffer;
+	int order = getOrder(aBuffer->size);
 	// This will probably need to be changed to int on the tlab - long on 64-bit machines, int on 32-bit
 	long buddyAddr = (long)buddy;
-	buddyAddr ^= 1 << getOrder(aBuffer->size);
+	buddyAddr ^= 1 << order;
 	buddy = (buffer*)buddyAddr;
+	if (debug) printf("Buffer addr is %p, buddy addr is %p, order is %i\n", aBuffer, buddy, order);
 	return buddy;
 }
 
