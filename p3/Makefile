@@ -15,7 +15,7 @@ TEAM = `whoami`
 VERSION = `date +%Y%m%d%H%M%S`
 PROJ = kma
 
-COMPETITION = KMA_DUMMY
+COMPETITION = KMA_P2FL
 
 CC = gcc
 MV = mv
