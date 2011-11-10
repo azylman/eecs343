@@ -55,6 +55,12 @@
  */
 
 /************Global Variables*********************************************/
+typedef struct buffer_struct
+{
+	void* header;
+	void* data;
+} buffer;
+
 typedef struct page_header_info_struct
 {
 	kpage_t* page_info;
@@ -63,7 +69,7 @@ typedef struct page_header_info_struct
 
 typedef struct
 {
-	void* next_buffer;
+	buffer* next_buffer;
 	int numAllocatedBuffers;
 	page_header_info* first_page;
 } free_list_info;
@@ -82,12 +88,6 @@ typedef struct
 	free_list_info bytes8192;
 	int numAllocatedPages;
 } free_list_pointers;
-
-typedef struct
-{
-	void* header;
-	void* data;
-} buffer;
 
 /************Function Prototypes******************************************/
 
