@@ -107,6 +107,8 @@ buffer* getBuddy(buffer*);
 void coalesceIfNecessary(buffer*);
 freeListInfo* getFreeList(int);
 int getBufferSize(int);
+void removeBufferFromFreeList(buffer*, freeListInfo*);
+int getOrder(int);
 
 /************External Declaration*****************************************/
 
@@ -142,10 +144,10 @@ kma_free(void* ptr, kma_size_t size)
 	printf("FREE %i\n", size);
 	buffer* aBuffer = (buffer*)(ptr - sizeof(buffer) + sizeof(void*));
 	aBuffer->isAllocated = 0;
-	//freeListInfo* freeList = aBuffer->header;
-	//addBufferToFreeList(aBuffer, freeList);
+	freeListInfo* freeList = aBuffer->header;
+	addBufferToFreeList(aBuffer, freeList);
 	
-	//coalesceIfNecessary(aBuffer);
+	coalesceIfNecessary(aBuffer);
 	
 	/*
 	if (debug) printf("Create buffer\n");
@@ -184,31 +186,38 @@ void coalesceIfNecessary(buffer* aBuffer) {
 	buffer* buddy = getBuddy(aBuffer);
 	
 	if (!buddy->isAllocated && buddy->size == aBuffer->size) {
-		// remove both buffers from their free lists
+		printf("Coalescing\n");
+		
+		freeListInfo* freeList = getFreeList(buddy->size);
+		removeBufferFromFreeList(buddy, freeList);
+		removeBufferFromFreeList(aBuffer, freeList);
+		
 		buffer* parent = buddy < aBuffer ? buddy : aBuffer;
 
 		parent->size = parent->size*2;
 		if (parent->size == 8192) {
+			printf("Coalesced to max size\n");
+			freeListPointers* freeLists = (freeListPointers*)entryPoint->ptr;
+
+			pageHeaderInfo* pageHeader = (void*)parent->start - sizeof(pageHeaderInfo)/sizeof(pageHeaderInfo);
+
+			free_page(pageHeader->pageInfo);
 			//free
 			//decrement num allocated pages
+			freeLists->numAllocatedPages--;
 			//if num allocated pages is 0, free entry_point
 		} else {
-			// add buffer to right free list
+			addBufferToFreeList(parent, getFreeList(parent->size));
 			coalesceIfNecessary(parent);
 		}
 	}
 }
 
 buffer* getBuddy(buffer* aBuffer) {
-	int offset = aBuffer - aBuffer->start;
-	int up = offset % aBuffer->size;
-	printf("Buffer with size %i is at %p and the start is %p which means the offset is %i and up is %i\n", aBuffer->size, aBuffer, aBuffer->start, offset, up);
-	buffer* buddy;
-	if (up) {
-		buddy = aBuffer + aBuffer->size/sizeof(buffer);
-	} else {
-		buddy = aBuffer - aBuffer->size/sizeof(buffer);
-	}
+	buffer* buddy = aBuffer;
+	long buddyAddr = (long)buddy;
+	buddyAddr ^= 1 << getOrder(aBuffer->size);
+	buddy = (buffer*)buddyAddr;
 	return buddy;
 }
 
@@ -265,6 +274,8 @@ void* getNextBuffer(freeListInfo* freeList) {
 	freeList->numAllocatedBuffers++;
 
 	buffer* aBuffer = removeFirstBuffer(freeList);
+	aBuffer->header = freeList;
+	aBuffer->isAllocated = 1;
 	if (debug) printf("Returning %p as the result of malloc\n", aBuffer);
 	return &(aBuffer->data);
 }
@@ -283,6 +294,22 @@ void addBufferToFreeList(buffer* aBuffer, freeListInfo* freeList) {
 	aBuffer->header = freeList->nextBuffer;
 	if (debug) printf("and setting its header to %p\n", aBuffer->header);
 	freeList->nextBuffer = aBuffer;
+}
+
+void removeBufferFromFreeList(buffer* aBuffer, freeListInfo* freeList) {
+	buffer* curBuffer = freeList->nextBuffer;
+	if (curBuffer == 0) return;
+	if (curBuffer == aBuffer) {
+		freeList->nextBuffer = aBuffer->header;
+	}
+	
+	while (curBuffer->header != 0 && curBuffer->header != aBuffer) {
+		curBuffer = curBuffer->header;
+	}
+	
+	if (curBuffer->header == aBuffer) {
+		curBuffer->header = aBuffer->header;
+	}
 }
 
 void addPageToFreeList(pageHeaderInfo* pageHeader, freeListInfo* freeList) {
@@ -451,6 +478,46 @@ int getBufferSize(int size) {
 	
 	if (size <= 8192) {
 		return 8192;
+	}
+	
+	return 0;
+}
+
+int getOrder(int size) {
+	if (size <= 32) {
+		return 5;
+	}
+	
+	if (size <= 64) {
+		return 6;
+	}
+	
+	if (size <= 128) {
+		return 7;
+	}
+	
+	if (size <= 256) {
+		return 8;
+	}
+	
+	if (size <= 512) {
+		return 9;
+	}
+	
+	if (size <= 1024) {
+		return 10;
+	}
+	
+	if (size <= 2048) {
+		return 11;
+	}
+	
+	if (size <= 4096) {
+		return 12;
+	}
+	
+	if (size <= 8192) {
+		return 13;
 	}
 	
 	return 0;
