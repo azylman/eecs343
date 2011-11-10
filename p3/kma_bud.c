@@ -202,10 +202,11 @@ void coalesceIfNecessary(buffer* aBuffer) {
 			pageHeaderInfo* pageHeader = (void*)parent->start - sizeof(pageHeaderInfo)/sizeof(pageHeaderInfo);
 
 			free_page(pageHeader->pageInfo);
-			//free
-			//decrement num allocated pages
 			freeLists->numAllocatedPages--;
-			//if num allocated pages is 0, free entry_point
+			if (freeLists->numAllocatedPages == 0) {
+				free_page(entryPoint);
+				entryPoint = 0;
+			}
 		} else {
 			addBufferToFreeList(parent, getFreeList(parent->size));
 			coalesceIfNecessary(parent);
