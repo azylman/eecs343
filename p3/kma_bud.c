@@ -180,23 +180,8 @@ void coalesceIfNecessary(buffer* aBuffer) {
 		buffer* parent = buddy < aBuffer ? buddy : aBuffer;
 
 		parent->size = parent->size*2;
-		if (parent->size == 8192) {
-			if (debug) printf("Coalesced to max size\n");
-			freeListPointers* freeLists = (freeListPointers*)entryPoint->ptr;
-
-			pageHeaderInfo* pageHeader = (void*)parent->start - sizeof(pageHeaderInfo);
-			if (debug) printf("The start is at %p and the page header is at %p\n", parent->start, pageHeader);
-
-			free_page(pageHeader->pageInfo);
-			freeLists->numAllocatedPages--;
-			if (freeLists->numAllocatedPages == 0) {
-				free_page(entryPoint);
-				entryPoint = 0;
-			}
-		} else {
-			addBufferToFreeList(parent, getFreeList(parent->size));
-			coalesceIfNecessary(parent);
-		}
+		addBufferToFreeList(parent, getFreeList(parent->size));
+		coalesceIfNecessary(parent);
 	}
 }
 
