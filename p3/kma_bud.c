@@ -184,6 +184,7 @@ void coalesceIfNecessary(buffer* aBuffer) {
 
 buffer* getBuddy(buffer* aBuffer) {
 	buffer* buddy = aBuffer;
+	// This will probably need to be changed to int on the tlab - long on 64-bit machines, int on 32-bit
 	long buddyAddr = (long)buddy;
 	buddyAddr ^= 1 << getOrder(aBuffer->size);
 	buddy = (buffer*)buddyAddr;
