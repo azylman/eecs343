@@ -1,6 +1,6 @@
 #!/bin/sh
 
-source config.test;
+source ./config.test;
 
 if [[ ! "$#" -eq 1 ]]; then
 	echo -e "usage: $0 targz_file";

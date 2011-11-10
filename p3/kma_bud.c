@@ -121,7 +121,7 @@ static int debug = 0;
 void*
 kma_malloc(kma_size_t size)
 {
-	printf("\nREQUEST %i\n", size);
+	if (debug) printf("\nREQUEST %i\n", size);
 	if (entryPoint == 0) {
 		entryPoint = getEntryPoint();
 	}
@@ -141,7 +141,7 @@ kma_malloc(kma_size_t size)
 void
 kma_free(void* ptr, kma_size_t size)
 {
-	printf("\nFREE %i\n", size);
+	if (debug) printf("\nFREE %i\n", size);
 	buffer* aBuffer = (buffer*)(ptr - sizeof(buffer) + sizeof(void*));
 	aBuffer->isAllocated = 0;
 	freeListInfo* freeList = aBuffer->header;
