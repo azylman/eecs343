@@ -1,0 +1,5 @@
+Alex Zylman
+Matthew Markwell
+
+
+We chose to implement 2 algorithms, the Power-of-Two free lists and the Buddy System.  The power of two free lists algorithm splits pages into sizes of powers of 2 and gives the request the amount needed rounded up to the next power of two.  Buddy System always allocates buffers as the full page size, and then splits larger buffers into smaller ones to produce the correct needed buffer size. Based on the way we implemented both algorithms, I think that the Buddy System algorithm is more efficient.  It will generally have a higher utilization factor, because it creates the right size buffers out of larger buffers, not out of new pages.  It will take a longer time to free buffers though, because coallescing could slow the process down immensely (worst case a coalesce will happen 9 times and then the page will be returned, giving a very bad worst case free time).  This latency is still worth having compared to the really bad memory utilization of Power-of-Two free lists.  A lazy buddy algorithm would have done a much better job with worst case performance, but we chose not to implement this algorithm.
