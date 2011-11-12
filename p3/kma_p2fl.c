@@ -208,7 +208,8 @@ kma_free(void* ptr, kma_size_t size)
 	free_list->numAllocatedBuffers--;
 	if (debug) printf("to %i\n", free_list->numAllocatedBuffers);
 	if (free_list->numAllocatedBuffers == 0) {
-	
+
+		if (debug) printf("First page: %p\n", free_list->first_page);
 		page_header_info* cur_page = free_list->first_page;
 		while (cur_page != 0) {
 			kpage_t* page = cur_page->page_info;

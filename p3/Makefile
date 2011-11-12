@@ -11,11 +11,11 @@
 ###############################################################################
 
 # handin info
-TEAM = `whoami`
+TEAM = "mrm297+amz716"
 VERSION = `date +%Y%m%d%H%M%S`
 PROJ = kma
 
-COMPETITION = KMA_P2FL
+COMPETITION = KMA_BUD
 
 CC = gcc
 MV = mv
