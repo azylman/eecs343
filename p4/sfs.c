@@ -19,8 +19,33 @@
  *******************************************************************************
  */
 
+#include <math.h>
+ 
 #include "sfs.h"
 #include "sdisk.h"
+
+void allocateSector(int);
+void deallocateSector(int);
+void setBit(int*, int);
+void clearBit(int*, int);
+
+static int numSectorsForFreeBitmap = -1;
+
+void allocateSector(int sector) {
+	
+}
+
+void deallocateSector(int sector) {
+	
+}
+
+void setBit(int* sequence, int bitNum) {
+	*sequence |= 1 << bitNum;
+}
+
+void clearBit(int* sequence, int bitNum) {
+	*sequence &= ~(1 << bitNum);
+}
 
 /*
  * sfs_mkfs: use to build your filesystem
@@ -31,7 +56,12 @@
  *
  */
 int sfs_mkfs() {
-    // TODO: Implement
+    int numBits = SD_SECTORSIZE * SD_NUMSECTORS;
+	int numBytes = ceil( (double)numBits / (double)8 );
+	numSectorsForFreeBitmap = ceil( (double)numBytes / (double)SD_SECTORSIZE );
+	
+	
+	
     return -1;
 } /* !sfs_mkfs */
 
