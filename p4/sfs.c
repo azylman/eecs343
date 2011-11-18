@@ -20,27 +20,34 @@
  */
 
 #include <math.h>
+#include <stdbool.h>
  
 #include "sfs.h"
 #include "sdisk.h"
 
+Sector* getSector(int);
+
 void allocateSector(int);
 void deallocateSector(int);
+
 void setBit(int*, int);
 void clearBit(int*, int);
 void toggleBit(int*, int);
 int getBit(int*, int);
 void initSector(int);
 
-static int numSectorsForFreeBitmap = -1;
+Sector* getSector(int sector) {
+	Sector* retrievedSector = malloc(sizeof(Sector));
+	SD_read(sector, retrievedSector);
+	return retrievedSector;
+}
 
 void allocateSector(int sector) {
 	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
 	int sectorOffset = sector % SD_SECTORSIZE;
 	
-	Sector* bitmapSector = malloc(sizeof(Sector));
+	Sector* bitmapSector = getSector(bitmapSectorNumber);
 	
-	SD_read(bitmapSectorNumber, bitmapSector);
 	setBit((int*)bitmapSector, sectorOffset);
 	SD_write(bitmapSectorNumber, bitmapSector);
 	
@@ -51,9 +58,8 @@ void deallocateSector(int sector) {
 	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
 	int sectorOffset = sector % SD_SECTORSIZE;
 	
-	Sector* bitmapSector = malloc(sizeof(Sector));
+	Sector* bitmapSector = getSector(bitmapSectorNumber);
 	
-	SD_read(bitmapSectorNumber, bitmapSector);
 	clearBit((int*)bitmapSector, sectorOffset);
 	SD_write(bitmapSectorNumber, bitmapSector);
 	
@@ -84,6 +90,35 @@ void initSector(int sector) {
 	free(bitmapSector);
 }
 
+typedef struct inodeHeader_s {
+	int nextInodeSector;
+	int usedInodesBitmap; // we need a size for this
+} inodeHeader;
+
+typedef struct inode_s {
+	bool isFile;
+	struct inode_s* parent;
+	struct inode_s* cont;
+} inode;
+
+typedef struct inodeFile_s {
+	bool isFile;
+	inode* parent;
+	inode* cont;
+	//int[] sectors; // find out what size this should be
+} inodeFile;
+
+typedef struct inodeDir_s {
+	bool isFile;
+	inode* parent;
+	inode* cont;
+	//inode*[] children; // find out what size this should be
+} inodeDir;
+
+static int numSectorsForFreeBitmap = -1;
+
+static int inodeSize = sizeof(inodeFile) > sizeof(inodeDir) ? sizeof(inodeFile) : sizeof(inodeDir);
+
 /*
  * sfs_mkfs: use to build your filesystem
  *
@@ -101,8 +136,6 @@ int sfs_mkfs() {
 		initSector(i);
 		allocateSector(i);
 	}
-	
-	
 	
     return 0;
 } /* !sfs_mkfs */
