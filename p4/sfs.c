@@ -105,14 +105,14 @@ typedef struct inodeFile_s {
 	bool isFile;
 	inode* parent;
 	inode* cont;
-	//int[] sectors; // find out what size this should be
+	int sectors[6]; // find out what size this should be
 } inodeFile;
 
 typedef struct inodeDir_s {
 	bool isFile;
 	inode* parent;
 	inode* cont;
-	//inode*[] children; // find out what size this should be
+	inode* children[6]; // find out what size this should be
 } inodeDir;
 
 static int numSectorsForFreeBitmap = -1;
