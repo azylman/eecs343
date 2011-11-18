@@ -28,15 +28,36 @@ void allocateSector(int);
 void deallocateSector(int);
 void setBit(int*, int);
 void clearBit(int*, int);
+void toggleBit(int*, int);
+int getBit(int*, int);
+void initSector(int);
 
 static int numSectorsForFreeBitmap = -1;
 
 void allocateSector(int sector) {
+	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
+	int sectorOffset = sector % SD_SECTORSIZE;
 	
+	Sector* bitmapSector = malloc(sizeof(Sector));
+	
+	SD_read(bitmapSectorNumber, bitmapSector);
+	setBit((int*)bitmapSector, sectorOffset);
+	SD_write(bitmapSectorNumber, bitmapSector);
+	
+	free(bitmapSector);
 }
 
 void deallocateSector(int sector) {
+	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
+	int sectorOffset = sector % SD_SECTORSIZE;
 	
+	Sector* bitmapSector = malloc(sizeof(Sector));
+	
+	SD_read(bitmapSectorNumber, bitmapSector);
+	clearBit((int*)bitmapSector, sectorOffset);
+	SD_write(bitmapSectorNumber, bitmapSector);
+	
+	free(bitmapSector);
 }
 
 void setBit(int* sequence, int bitNum) {
@@ -45,6 +66,22 @@ void setBit(int* sequence, int bitNum) {
 
 void clearBit(int* sequence, int bitNum) {
 	*sequence &= ~(1 << bitNum);
+}
+
+int getBit(int* sequence, int bitNum) {
+	return *sequence & (1 << bitNum);
+}
+
+void toggleBit(int* sequence, int bitNum) {
+	*sequence ^= 1 << bitNum;
+}
+
+void initSector(int sector) {
+	Sector* bitmapSector = malloc(sizeof(Sector));
+	SD_read(sector, bitmapSector);
+	*(int*)bitmapSector = 0;
+	SD_write(sector, bitmapSector);
+	free(bitmapSector);
 }
 
 /*
@@ -59,9 +96,15 @@ int sfs_mkfs() {
 	int numBytes = ceil( (double)SD_NUMSECTORS / (double)8 );
 	numSectorsForFreeBitmap = ceil( (double)numBytes / (double)SD_SECTORSIZE );
 	
-	printf("There are %i sectors, which means we need %i bytes to contain the bitmap. That means that we need %i sectors\n", SD_NUMSECTORS, numBytes, numSectorsForFreeBitmap);
+	int i;
+	for(i = 0; i < numSectorsForFreeBitmap; ++i) {
+		initSector(i);
+		allocateSector(i);
+	}
 	
-    return -1;
+	
+	
+    return 0;
 } /* !sfs_mkfs */
 
 /*
