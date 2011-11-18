@@ -2,3 +2,4 @@ gmon.out
 *.o
 tsh
 *.swp
+*.dSYM
