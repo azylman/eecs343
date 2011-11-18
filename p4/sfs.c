@@ -119,6 +119,8 @@ static int numSectorsForFreeBitmap = -1;
 
 static int inodeSize = sizeof(inodeFile) > sizeof(inodeDir) ? sizeof(inodeFile) : sizeof(inodeDir);
 
+// some static file containing info on all open files
+
 /*
  * sfs_mkfs: use to build your filesystem
  *
@@ -137,6 +139,8 @@ int sfs_mkfs() {
 		allocateSector(i);
 	}
 	
+	// set up root inode
+	
     return 0;
 } /* !sfs_mkfs */
 
@@ -149,7 +153,9 @@ int sfs_mkfs() {
  *
  */
 int sfs_mkdir(char *name) {
-    // TODO: Implement
+    // parse the name to get the parents and the name of the new directory
+	// iterate over the inodes until you find the subdirectory you're supposed to create it at
+	// create it
     return -1;
 } /* !sfs_mkdir */
 
@@ -162,7 +168,8 @@ int sfs_mkdir(char *name) {
  *
  */
 int sfs_fcd(char* name) {
-    // TODO: Implement
+	// how do we keep track of current directory? a static var?
+	// parse the path and iterate through all the inodes until we find the new one
     return -1;
 } /* !sfs_fcd */
 
@@ -176,7 +183,8 @@ int sfs_fcd(char* name) {
  *
  */
 int sfs_ls(FILE* f) {
-    // TODO: Implement
+    // read all the info in the current directory
+	// write it to f
     return -1;
 } /* !sfs_ls */
 
@@ -192,7 +200,7 @@ int sfs_ls(FILE* f) {
  *
  */
 int sfs_fopen(char* name) {
-    // TODO: Implement
+    // find the inode based on the name, write file info to our file descriptors array, and return the index into the array
     return -1;
 } /* !sfs_fopen */
 
@@ -206,7 +214,7 @@ int sfs_fopen(char* name) {
  *
  */
 int sfs_fclose(int fileID) {
-    // TODO: Implement
+    // close the file descriptor represented by fileID? what does that entail exactly?
     return -1;
 } /* !sfs_fclose */
 
@@ -221,7 +229,9 @@ int sfs_fclose(int fileID) {
  *
  */
 int sfs_fread(int fileID, char *buffer, int length) {
-    // TODO: Implement
+    // get the file descriptor
+	// find out which sectors comprise that file
+	// copy the length bytes from the sectors into buffer - do we need to start at an offset stored in the descriptor?
     return -1;
 }
 
@@ -236,7 +246,9 @@ int sfs_fread(int fileID, char *buffer, int length) {
  *
  */
 int sfs_fwrite(int fileID, char *buffer, int length) {
-    // TODO: Implement
+    // get the file descriptor
+	// find out which sectors comprise that file
+	// copy length bytes from the buffer into the sectors - do we need to start at an offset stored in the descriptor?
     return -1;
 } /* !sfs_fwrite */
 
@@ -251,7 +263,8 @@ int sfs_fwrite(int fileID, char *buffer, int length) {
  *
  */
 int sfs_lseek(int fileID, int position) {
-    // TODO: Implement
+    // get the file descriptor
+	// change the offset to position
     return -1;
 } /* !sfs_lseek */
 
