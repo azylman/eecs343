@@ -56,11 +56,10 @@ void clearBit(int* sequence, int bitNum) {
  *
  */
 int sfs_mkfs() {
-    int numBits = SD_SECTORSIZE * SD_NUMSECTORS;
-	int numBytes = ceil( (double)numBits / (double)8 );
+	int numBytes = ceil( (double)SD_NUMSECTORS / (double)8 );
 	numSectorsForFreeBitmap = ceil( (double)numBytes / (double)SD_SECTORSIZE );
 	
-	
+	printf("There are %i sectors, which means we need %i bytes to contain the bitmap. That means that we need %i sectors\n", SD_NUMSECTORS, numBytes, numSectorsForFreeBitmap);
 	
     return -1;
 } /* !sfs_mkfs */
