@@ -124,7 +124,7 @@ typedef struct fileDescriptor_s {
 
 static int sectorBitmapSizeInSectors = -1;
 static int inodeBitmapSizeInSectors = -1;
-static int inodeListSizeInSectors = -1;
+static int inodeArraySizeInSectors = -1;
 
 static int inodeSize = sizeof(inodeFile) > sizeof(inodeDir) ? sizeof(inodeFile) : sizeof(inodeDir);
 
@@ -147,15 +147,15 @@ int sfs_mkfs() {
 	int numInodes = SD_NUMSECTORS - sectorBitmapSizeInSectors;
 	inodeBitmapSizeInSectors = ceil( (double)numInodes / (double)SD_SECTORSIZE / (double)8 );
 	
-	inodeListSizeInSectors = ceil( (double)numInodes * (double)inodeSize / (double)SD_SECTORSIZE );
+	inodeArraySizeInSectors = ceil( (double)numInodes * (double)inodeSize / (double)SD_SECTORSIZE );
 	
 	int i;
-	for(i = 0; i < sectorBitmapSizeInSectors + inodeBitmapSizeInSectors + inodeListSizeInSectors; ++i) {
+	for(i = 0; i < sectorBitmapSizeInSectors + inodeBitmapSizeInSectors + inodeArraySizeInSectors; ++i) {
 		initSector(i);
 		allocateSector(i);
 	}
 	
-	printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeListSizeInSectors);
+	printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeArraySizeInSectors);
 	
     return 0;
 } /* !sfs_mkfs */
