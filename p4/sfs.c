@@ -37,6 +37,10 @@ void markSectorAsNotUsed(int);
 void markInodeAsUsed(int);
 void markInodeAsNotUsed(int);
 
+int getNextFreeInode();
+
+int createInode();
+
 void setBit(int*, int);
 void clearBit(int*, int);
 void toggleBit(int*, int);
@@ -56,7 +60,9 @@ void markSectorAsUsed(int sector) {
 	
 	Sector* bitmapSector = getSector(bitmapSectorNumber);
 	
-	setBit((int*)bitmapSector, sectorOffset);
+	int* intToInspect = (int*)bitmapSector + (int)floor( sectorOffset / sizeof(int) ) / sizeof(int);
+	
+	setBit(intToInspect, sectorOffset % sizeof(int));
 	SD_write(bitmapSectorNumber, bitmapSector);
 	
 	free(bitmapSector);
@@ -69,7 +75,9 @@ void markSectorAsNotUsed(int sector) {
 	
 	Sector* bitmapSector = getSector(bitmapSectorNumber);
 	
-	clearBit((int*)bitmapSector, sectorOffset);
+	int* intToInspect = (int*)bitmapSector + (int)floor( sectorOffset / sizeof(int) ) / sizeof(int);
+	
+	clearBit(intToInspect, sectorOffset % sizeof(int));
 	SD_write(bitmapSectorNumber, bitmapSector);
 	
 	free(bitmapSector);
@@ -81,7 +89,9 @@ void markInodeAsUsed(int inodeNumber) {
 	
 	Sector* inodeSector = getSector(inodeSectorNumber);
 	
-	setBit((int*)inodeSector, sectorOffset);
+	int* intToInspect = (int*)inodeSector + (int)floor( sectorOffset / sizeof(int) ) / sizeof(int);
+	
+	setBit(intToInspect, sectorOffset % sizeof(int));
 	SD_write(inodeSectorNumber, inodeSector);
 	
 	free(inodeSector);
@@ -93,10 +103,23 @@ void markInodeAsNotUsed(int inodeNumber) {
 	
 	Sector* inodeSector = getSector(inodeSectorNumber);
 	
-	clearBit((int*)inodeSector, sectorOffset);
+	int* intToInspect = (int*)inodeSector + (int)floor( sectorOffset / sizeof(int) ) / sizeof(int);
+	
+	clearBit(intToInspect, sectorOffset % sizeof(int));
 	SD_write(inodeSectorNumber, inodeSector);
 	
 	free(inodeSector);
+}
+
+int getNextFreeInode() {
+	return -1;
+}
+
+int createInode() {
+	// get next free inode from inode bitmap
+	// mark that inode as used
+	// return it
+	return -1;
 }
 
 void setBit(int* sequence, int bitNum) {
@@ -135,8 +158,8 @@ typedef struct inodeFile_s {
 	inode* parent;
 	inode* cont;
 	char name[16];
+	int sectors[6];
 	int filesize;
-	int sectors[6]; // find out what size this should be
 } inodeFile;
 
 typedef struct inodeDir_s {
@@ -144,7 +167,7 @@ typedef struct inodeDir_s {
 	inode* parent;
 	inode* cont;
 	char name[16];
-	inode* children[6]; // find out what size this should be
+	int children[6];
 } inodeDir;
 
 typedef struct fileDescriptor_s {
