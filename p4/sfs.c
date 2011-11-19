@@ -30,8 +30,8 @@ Sector* getSector(int);
 void markSectorAsUsed(int);
 void markSectorAsNotUsed(int);
 
-void allocateInode(int);
-void deallocateInode(int);
+void markInodeAsUsed(int);
+void markInodeAsNotUsed(int);
 
 void setBit(int*, int);
 void clearBit(int*, int);
@@ -71,10 +71,10 @@ void markSectorAsNotUsed(int sector) {
 	free(bitmapSector);
 }
 
-void allocateInode(int inodeNumber) {
+void markInodeAsUsed(int inodeNumber) {
 }
 
-void deallocateInode(int inodeNumber) {
+void markInodeAsNotUsed(int inodeNumber) {
 }
 
 void setBit(int* sequence, int bitNum) {
