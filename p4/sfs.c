@@ -27,8 +27,11 @@
 
 Sector* getSector(int);
 
-void allocateSector(int);
-void deallocateSector(int);
+void markSectorAsUsed(int);
+void markSectorAsNotUsed(int);
+
+void allocateInode(int);
+void deallocateInode(int);
 
 void setBit(int*, int);
 void clearBit(int*, int);
@@ -43,7 +46,7 @@ Sector* getSector(int sector) {
 }
 
 // Mark a sector as in use in our bitmap
-void allocateSector(int sector) {
+void markSectorAsUsed(int sector) {
 	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
 	int sectorOffset = sector % SD_SECTORSIZE;
 	
@@ -56,7 +59,7 @@ void allocateSector(int sector) {
 }
 
 // Mark a sector as not in use in our bitmap
-void deallocateSector(int sector) {
+void markSectorAsNotUsed(int sector) {
 	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
 	int sectorOffset = sector % SD_SECTORSIZE;
 	
@@ -66,6 +69,12 @@ void deallocateSector(int sector) {
 	SD_write(bitmapSectorNumber, bitmapSector);
 	
 	free(bitmapSector);
+}
+
+void allocateInode(int inodeNumber) {
+}
+
+void deallocateInode(int inodeNumber) {
 }
 
 void setBit(int* sequence, int bitNum) {
@@ -152,7 +161,7 @@ int sfs_mkfs() {
 	int i;
 	for(i = 0; i < sectorBitmapSizeInSectors + inodeBitmapSizeInSectors + inodeArraySizeInSectors; ++i) {
 		initSector(i);
-		allocateSector(i);
+		markSectorAsUsed(i);
 	}
 	
 	printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeArraySizeInSectors);
