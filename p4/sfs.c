@@ -29,6 +29,8 @@ static int sectorBitmapSizeInSectors = -1;
 static int inodeBitmapSizeInSectors = -1;
 static int inodeArraySizeInSectors = -1;
 
+static short DEBUG = 0;
+
 Sector* getSector(int);
 
 void markSectorAsUsed(int);
@@ -89,9 +91,13 @@ void markInodeAsUsed(int inodeNumber) {
 	
 	Sector* inodeSector = getSector(inodeSectorNumber);
 	
-	int* intToInspect = (int*)inodeSector + (int)floor( sectorOffset / sizeof(int) ) / sizeof(int);
+	int* intToInspect = (int*)inodeSector + (int)(floor( sectorOffset / 32 ));
 	
-	setBit(intToInspect, sectorOffset % sizeof(int));
+	if (DEBUG) printf("Are we still at our sector beginning? %i\n", intToInspect == inodeSector);
+	
+	if (DEBUG) printf("Before setting, our byte is %i and we're setting %i ", *intToInspect, sectorOffset % 32);
+	setBit(intToInspect, sectorOffset % 32);
+	if (DEBUG) printf("and is %i after\n", *intToInspect);
 	SD_write(inodeSectorNumber, inodeSector);
 	
 	free(inodeSector);
@@ -112,14 +118,47 @@ void markInodeAsNotUsed(int inodeNumber) {
 }
 
 int getNextFreeInode() {
-	return -1;
+	int fullIntegerBitmap = ~0;
+	int value = 0;
+	
+	int secNum = sectorBitmapSizeInSectors;
+	
+	Sector* bitmap = getSector(secNum);
+	int* curPos = bitmap;
+	
+	if (DEBUG) printf("Our bitmap is %i, ", *(int*)bitmap);
+	
+	while (*(int*)curPos == fullIntegerBitmap) {
+		if (DEBUG) printf("we need a new int boundary, ");
+		value += 32;
+		if (DEBUG) printf("our bitmap pointer goes from %p ", curPos);
+		curPos++;
+		if (DEBUG) printf("to %p, ", curPos);
+		
+		if (value % sizeof(Sector) == 0) {
+			secNum++;
+			free(bitmap);
+			bitmap = getSector(secNum);
+			curPos = bitmap;
+		}
+	}
+	
+	while ((*(int*)curPos & 1) != 0) {
+		value++;
+		*(int*)curPos >>= 1;
+	}
+	
+	free(bitmap);
+	
+	if (DEBUG) printf("and our next free one is %i\n", value);
+	
+	return value;
 }
 
 int createInode() {
-	// get next free inode from inode bitmap
-	// mark that inode as used
-	// return it
-	return -1;
+	int inodeNum = getNextFreeInode();
+	markInodeAsUsed(inodeNum);
+	return inodeNum;
 }
 
 void setBit(int* sequence, int bitNum) {
@@ -205,7 +244,15 @@ int sfs_mkfs() {
 		markSectorAsUsed(i);
 	}
 	
-	printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeArraySizeInSectors);
+	//printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeArraySizeInSectors);
+	
+	DEBUG = 0;
+	int rootInode = 0;
+	for(i = 0; i < 35; ++i) {
+		if (i == 29) DEBUG = 1;
+		rootInode = createInode();
+	}
+	printf("Root inode is at %i\n", rootInode);
 	
     return 0;
 } /* !sfs_mkfs */
