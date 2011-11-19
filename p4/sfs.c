@@ -25,6 +25,10 @@
 #include "sfs.h"
 #include "sdisk.h"
 
+static int sectorBitmapSizeInSectors = -1;
+static int inodeBitmapSizeInSectors = -1;
+static int inodeArraySizeInSectors = -1;
+
 Sector* getSector(int);
 
 void markSectorAsUsed(int);
@@ -72,9 +76,27 @@ void markSectorAsNotUsed(int sector) {
 }
 
 void markInodeAsUsed(int inodeNumber) {
+	int inodeSectorNumber = floor( inodeNumber / SD_SECTORSIZE ) + sectorBitmapSizeInSectors;
+	int sectorOffset = inodeNumber % SD_SECTORSIZE;
+	
+	Sector* inodeSector = getSector(inodeSectorNumber);
+	
+	setBit((int*)inodeSector, sectorOffset);
+	SD_write(inodeSectorNumber, inodeSector);
+	
+	free(inodeSector);
 }
 
 void markInodeAsNotUsed(int inodeNumber) {
+	int inodeSectorNumber = floor( inodeNumber / SD_SECTORSIZE ) + sectorBitmapSizeInSectors;
+	int sectorOffset = inodeNumber % SD_SECTORSIZE;
+	
+	Sector* inodeSector = getSector(inodeSectorNumber);
+	
+	clearBit((int*)inodeSector, sectorOffset);
+	SD_write(inodeSectorNumber, inodeSector);
+	
+	free(inodeSector);
 }
 
 void setBit(int* sequence, int bitNum) {
@@ -130,10 +152,6 @@ typedef struct fileDescriptor_s {
 	int currentPos;
 	char* data;
 } fileDescriptor;
-
-static int sectorBitmapSizeInSectors = -1;
-static int inodeBitmapSizeInSectors = -1;
-static int inodeArraySizeInSectors = -1;
 
 static int inodeSize = sizeof(inodeFile) > sizeof(inodeDir) ? sizeof(inodeFile) : sizeof(inodeDir);
 
