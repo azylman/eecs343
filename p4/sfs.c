@@ -42,6 +42,7 @@ Sector* getSector(int sector) {
 	return retrievedSector;
 }
 
+// Mark a sector as in use in our bitmap
 void allocateSector(int sector) {
 	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
 	int sectorOffset = sector % SD_SECTORSIZE;
@@ -54,6 +55,7 @@ void allocateSector(int sector) {
 	free(bitmapSector);
 }
 
+// Mark a sector as not in use in our bitmap
 void deallocateSector(int sector) {
 	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
 	int sectorOffset = sector % SD_SECTORSIZE;
@@ -90,21 +92,19 @@ void initSector(int sector) {
 	free(bitmapSector);
 }
 
-typedef struct inodeHeader_s {
-	int nextInodeSector;
-	int usedInodesBitmap; // we need a size for this
-} inodeHeader;
-
 typedef struct inode_s {
 	bool isFile;
 	struct inode_s* parent;
 	struct inode_s* cont;
+	char name[16];
 } inode;
 
 typedef struct inodeFile_s {
 	bool isFile;
 	inode* parent;
 	inode* cont;
+	char name[16];
+	int filesize;
 	int sectors[6]; // find out what size this should be
 } inodeFile;
 
@@ -112,12 +112,23 @@ typedef struct inodeDir_s {
 	bool isFile;
 	inode* parent;
 	inode* cont;
+	char name[16];
 	inode* children[6]; // find out what size this should be
 } inodeDir;
 
-static int numSectorsForFreeBitmap = -1;
+typedef struct fileDescriptor_s {
+	inode* INODE;
+	int currentPos;
+	char* data;
+} fileDescriptor;
+
+static int sectorBitmapSizeInSectors = -1;
+static int inodeBitmapSizeInSectors = -1;
+static int inodeListSizeInSectors = -1;
 
 static int inodeSize = sizeof(inodeFile) > sizeof(inodeDir) ? sizeof(inodeFile) : sizeof(inodeDir);
+
+static int cwd = -1;
 
 // some static file containing info on all open files
 
@@ -131,15 +142,20 @@ static int inodeSize = sizeof(inodeFile) > sizeof(inodeDir) ? sizeof(inodeFile) 
  */
 int sfs_mkfs() {
 	int numBytes = ceil( (double)SD_NUMSECTORS / (double)8 );
-	numSectorsForFreeBitmap = ceil( (double)numBytes / (double)SD_SECTORSIZE );
+	sectorBitmapSizeInSectors = ceil( (double)numBytes / (double)SD_SECTORSIZE );
+	
+	int numInodes = SD_NUMSECTORS - sectorBitmapSizeInSectors;
+	inodeBitmapSizeInSectors = ceil( (double)numInodes / (double)SD_SECTORSIZE / (double)8 );
+	
+	inodeListSizeInSectors = ceil( (double)numInodes * (double)inodeSize / (double)SD_SECTORSIZE );
 	
 	int i;
-	for(i = 0; i < numSectorsForFreeBitmap; ++i) {
+	for(i = 0; i < sectorBitmapSizeInSectors + inodeBitmapSizeInSectors + inodeListSizeInSectors; ++i) {
 		initSector(i);
 		allocateSector(i);
 	}
 	
-	// set up root inode
+	printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeListSizeInSectors);
 	
     return 0;
 } /* !sfs_mkfs */
@@ -168,7 +184,6 @@ int sfs_mkdir(char *name) {
  *
  */
 int sfs_fcd(char* name) {
-	// how do we keep track of current directory? a static var?
 	// parse the path and iterate through all the inodes until we find the new one
     return -1;
 } /* !sfs_fcd */
@@ -200,7 +215,9 @@ int sfs_ls(FILE* f) {
  *
  */
 int sfs_fopen(char* name) {
-    // find the inode based on the name, write file info to our file descriptors array, and return the index into the array
+    // find the inode based on the name
+	// write file info to our file descriptors array
+	// and return the index into the array
     return -1;
 } /* !sfs_fopen */
 
@@ -214,7 +231,9 @@ int sfs_fopen(char* name) {
  *
  */
 int sfs_fclose(int fileID) {
-    // close the file descriptor represented by fileID? what does that entail exactly?
+    // write any changes in the data to the disk
+	// write any changes in the inode to the disk
+	// delete the file descriptor
     return -1;
 } /* !sfs_fclose */
 
@@ -231,7 +250,7 @@ int sfs_fclose(int fileID) {
 int sfs_fread(int fileID, char *buffer, int length) {
     // get the file descriptor
 	// find out which sectors comprise that file
-	// copy the length bytes from the sectors into buffer - do we need to start at an offset stored in the descriptor?
+	// copy the length bytes from the sectors into buffer
     return -1;
 }
 
@@ -248,7 +267,7 @@ int sfs_fread(int fileID, char *buffer, int length) {
 int sfs_fwrite(int fileID, char *buffer, int length) {
     // get the file descriptor
 	// find out which sectors comprise that file
-	// copy length bytes from the buffer into the sectors - do we need to start at an offset stored in the descriptor?
+	// copy length bytes from the buffer into the sectors
     return -1;
 } /* !sfs_fwrite */
 
