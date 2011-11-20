@@ -54,6 +54,7 @@ typedef struct fileDescriptor_s {
 	inode* INODE;
 	int currentPos;
 	char* data;
+	struct fileDescriptor_s* next;
 } fileDescriptor;
 
 static int sectorBitmapSizeInSectors = -1;
