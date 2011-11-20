@@ -62,9 +62,9 @@ void markSectorAsUsed(int sector) {
 	
 	Sector* bitmapSector = getSector(bitmapSectorNumber);
 	
-	int* intToInspect = (int*)bitmapSector + (int)floor( sectorOffset / sizeof(int) ) / sizeof(int);
+	int* intToInspect = (int*)bitmapSector + (int)(floor( sectorOffset / 32 ));
 	
-	setBit(intToInspect, sectorOffset % sizeof(int));
+	setBit(intToInspect, sectorOffset % 32);
 	SD_write(bitmapSectorNumber, bitmapSector);
 	
 	free(bitmapSector);
@@ -77,9 +77,9 @@ void markSectorAsNotUsed(int sector) {
 	
 	Sector* bitmapSector = getSector(bitmapSectorNumber);
 	
-	int* intToInspect = (int*)bitmapSector + (int)floor( sectorOffset / sizeof(int) ) / sizeof(int);
+	int* intToInspect = (int*)bitmapSector + (int)(floor( sectorOffset / 32 ));
 	
-	clearBit(intToInspect, sectorOffset % sizeof(int));
+	clearBit(intToInspect, sectorOffset % 32);
 	SD_write(bitmapSectorNumber, bitmapSector);
 	
 	free(bitmapSector);
@@ -93,11 +93,7 @@ void markInodeAsUsed(int inodeNumber) {
 	
 	int* intToInspect = (int*)inodeSector + (int)(floor( sectorOffset / 32 ));
 	
-	if (DEBUG) printf("Are we still at our sector beginning? %i\n", intToInspect == inodeSector);
-	
-	if (DEBUG) printf("Before setting, our byte is %i and we're setting %i ", *intToInspect, sectorOffset % 32);
 	setBit(intToInspect, sectorOffset % 32);
-	if (DEBUG) printf("and is %i after\n", *intToInspect);
 	SD_write(inodeSectorNumber, inodeSector);
 	
 	free(inodeSector);
@@ -109,9 +105,9 @@ void markInodeAsNotUsed(int inodeNumber) {
 	
 	Sector* inodeSector = getSector(inodeSectorNumber);
 	
-	int* intToInspect = (int*)inodeSector + (int)floor( sectorOffset / sizeof(int) ) / sizeof(int);
+	int* intToInspect = (int*)inodeSector + (int)(floor( sectorOffset / 32 ));
 	
-	clearBit(intToInspect, sectorOffset % sizeof(int));
+	clearBit(intToInspect, sectorOffset % 32);
 	SD_write(inodeSectorNumber, inodeSector);
 	
 	free(inodeSector);
