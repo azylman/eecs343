@@ -182,8 +182,9 @@ void initSector(int sector) {
 	int* intBoundary = bitmapSector;
 	SD_read(sector, bitmapSector);
 	int i;
-	for (intBoundary; intBoundary < bitmapSector + SD_SECTORSIZE; intBoundary++) {
+	for (i = 0; i < SD_SECTORSIZE / sizeof(int); i++) {
 		*intBoundary = 0;
+		intBoundary++;
 	}
 	*(int*)bitmapSector = 0;
 	SD_write(sector, bitmapSector);
@@ -251,13 +252,7 @@ int sfs_mkfs() {
 	
 	//printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeArraySizeInSectors);
 	
-	DEBUG = 0;
-	int rootInode = 0;
-	for(i = 0; i < 35; ++i) {
-		if (i == 29) DEBUG = 1;
-		rootInode = createInode();
-	}
-	printf("Root inode is at %i\n", rootInode);
+	int rootInode = createInode();
 	
     return 0;
 } /* !sfs_mkfs */
