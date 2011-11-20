@@ -179,7 +179,12 @@ void toggleBit(int* sequence, int bitNum) {
 
 void initSector(int sector) {
 	Sector* bitmapSector = malloc(sizeof(Sector));
+	int* intBoundary = bitmapSector;
 	SD_read(sector, bitmapSector);
+	int i;
+	for (intBoundary; intBoundary < bitmapSector + SD_SECTORSIZE; intBoundary++) {
+		*intBoundary = 0;
+	}
 	*(int*)bitmapSector = 0;
 	SD_write(sector, bitmapSector);
 	free(bitmapSector);
