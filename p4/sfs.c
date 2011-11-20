@@ -429,9 +429,13 @@ int sfs_mkfs() {
  *
  */
 int sfs_mkdir(char *name) {
+
+	printf("Creating folder %s\n", name);
+
     bool error = 0;
 	bool absolute = name[0] == '/';
 	int result = absolute ? rootInodeNum : cwd;
+	printf("Initially setting result to %i based on an absolute of %i (root is %i and cwd is %i)\n", result, absolute, rootInodeNum, cwd);
 	inodeDir* workingDir = (inodeDir*)getInode(result);
 	
 	tokenResult* tokens = parsePath(name);
@@ -444,6 +448,7 @@ int sfs_mkdir(char *name) {
 				if (workingDir->parent != -1) {
 					int parent = workingDir->parent;
 					free(workingDir);
+					printf("Setting result to %i\n", workingDir->parent);
 					workingDir = (inodeDir*)getInode(parent);
 					result = workingDir->parent;
 				} else {
@@ -459,6 +464,7 @@ int sfs_mkdir(char *name) {
 							inode* child = getInode(workingDirCont->children[j]);
 							if (strcmp(child->name, tokens->tokens[i]) == 0) {
 								if (!child->isFile) {
+									printf("Setting result to %i\n", workingDirCont->children[j]);
 									result = workingDirCont->children[j];
 									free(workingDir);
 									workingDir = (inodeDir*)child;
@@ -485,6 +491,7 @@ int sfs_mkdir(char *name) {
 		int newInode = createInode();
 		inode* child = getInode(newInode);
 		
+		printf("Creating child %i with a parent of %i\n", newInode, result);
 		initDir((inodeDir*)child, newInode, result, -1, tokens->tokens[tokens->numTokens - 1]);
 		
 		addChild(workingDir, newInode);
@@ -509,30 +516,34 @@ int sfs_mkdir(char *name) {
  *
  */
 int sfs_fcd(char* name) {
+
+	printf("Cding to %s\n", name);
+
 	bool error = 0;
 	bool absolute = name[0] == '/';
 	int result = absolute? 0 : cwd;
 	inodeDir* workingDir = (inodeDir*)getInode(result);
 	tokenResult* tokens = parsePath(name);
-	int i;
 	
-	for (i = 0; i < 6; ++i) {
-		if (workingDir->children[i] != -1) {
-			inode* child = getInode(workingDir->children[i]);
-			free(child);
-		}
+	if (tokens->numTokens == 0) {
+		cwd = rootInodeNum;
+		free(workingDir);
+		return 0;
 	}
 	
+	int i;
 	for (i = 0; i < tokens->numTokens; i++) {
+		printf("Checking token %s\n", tokens->tokens[i]);
 		if (strcmp(tokens->tokens[i], ".") == 0) {
 			// do nothing
 		} else {
 			if (strcmp(tokens->tokens[i], "..") == 0) {
+				printf("Recognizing token as a call to go to parent (parent of %i is %i)\n", workingDir->num, workingDir->parent);
 				if (workingDir->parent != -1) {
 					int parent = workingDir->parent;
+					result = workingDir->parent;
 					free(workingDir);
 					workingDir = (inodeDir*)getInode(parent);
-					result = workingDir->parent;
 				} else {
 					error = 1;
 				}

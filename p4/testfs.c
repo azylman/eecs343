@@ -154,18 +154,19 @@ int runTests() {
 #ifndef COMPETITION_TEST
     f_ls_base = fopen("base.ls", "w");
     f_ls = f_ls_base;
+	/*
     RUN_TEST(initFSTest());
     RUN_TEST(createSimpleFileTest());
     RUN_TEST(createSimpleFileTest());
     RUN_TEST(createSimpleFileWriteReadTest());
     RUN_TEST(singleBigFileTest());
     RUN_TEST(multipleFilesTest());
-    RUN_TEST(createFolderTest());
+    RUN_TEST(createFolderTest());*/
     RUN_TEST(multipleFoldersTest());
-    RUN_TEST(appendFileTest());
+    /*RUN_TEST(appendFileTest());
     RUN_TEST(multipleOpenFilesTest());
     RUN_TEST(nestedFoldersTest());
-    RUN_TEST(errorTest());
+    RUN_TEST(errorTest());*/
 #else
     f_ls_compTest = fopen("compTest.ls", "w");
     f_ls = f_ls_compTest;
@@ -820,11 +821,9 @@ int multipleFiles(char *fileBaseName, int numFiles, int maxFileSize) {
 int createFolder(char *dirName) {
     int hr = SUCCESS;
 
-	printf("Making dir %s\n", dirName);
     FAIL_BRK3(sfs_mkdir(dirName), stdout,
             "Error: Creating folder (%s) failed\n", dirName);
 
-	printf("and CDing into it.\n");
     FAIL_BRK3(sfs_fcd(dirName), stdout,
             "Error: Attempt to cd to a new folder (%s) failed\n", dirName);
 
