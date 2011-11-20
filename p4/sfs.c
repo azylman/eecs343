@@ -133,7 +133,7 @@ int getNextFreeInode() {
 		value += 32;
 		if (DEBUG) printf("our bitmap pointer goes from %p ", curPos);
 		curPos++;
-		if (DEBUG) printf("to %p, where the value of curPos is %i ", curPos, *(int*)curPos);
+		if (DEBUG) printf("to %p, where the value of curPos is %i, ", curPos, *(int*)curPos);
 		
 		if (value % sizeof(Sector) == 0) {
 			secNum++;
