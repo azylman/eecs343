@@ -47,7 +47,7 @@ typedef struct inodeDir_s {
 	inode* parent;
 	inode* cont;
 	char name[16];
-	int children[6];
+	inode* children[6];
 } inodeDir;
 
 typedef struct fileDescriptor_s {
@@ -82,7 +82,7 @@ int createInode();
 inode* getInode(int);
 
 void initDir(inodeDir*, inode*, inode*, char[16]);
-void initFile(inodeDir*, inode*, inode*, char[16]);
+void initFile(inodeFile*, inode*, inode*, char[16]);
 void initInode(inode*, bool, inode*, inode*, char[16]);
 
 void setBit(int*, int);
@@ -212,9 +212,17 @@ inode* getInode(int inodeNum) {
 }
 
 void initDir(inodeDir* dir, inode* parent, inode* cont, char name[16]) {
+	int i;
+	for (i = 0; i < 6; ++i) {
+		dir->children[i] = 0;
+	}
 	initInode((inode*) dir, 0, parent, cont, name);
 }
-void initFile(inodeDir* file, inode* parent, inode* cont, char name[16]) {
+void initFile(inodeFile* file, inode* parent, inode* cont, char name[16]) {
+	int i;
+	for (i = 0; i < 6; ++i) {
+		file->sectors[i] = -1;
+	}
 	initInode((inode*) file, 0, parent, cont, name);
 }
 void initInode(inode* INODE, bool isFile, inode* parent, inode* cont, char name[16]) {
@@ -325,9 +333,16 @@ int sfs_fcd(char* name) {
  *
  */
 int sfs_ls(FILE* f) {
-    // read all the info in the current directory
-	// write it to f
-    return -1;
+    inodeDir* cwi = (inodeDir*)getInode(cwd);
+	do {
+		int i;
+		for (i = 0; i < 6; ++i) {
+			if (cwi->children[i] != 0) {
+				fprintf(f, "%s\n", cwi->children[i]->name);
+			}
+		}
+	} while( (cwi = (inodeDir*)cwi->cont) != 0);
+    return 0;
 } /* !sfs_ls */
 
 /*
