@@ -820,9 +820,11 @@ int multipleFiles(char *fileBaseName, int numFiles, int maxFileSize) {
 int createFolder(char *dirName) {
     int hr = SUCCESS;
 
+	printf("Making dir %s\n", dirName);
     FAIL_BRK3(sfs_mkdir(dirName), stdout,
             "Error: Creating folder (%s) failed\n", dirName);
 
+	printf("and CDing into it.\n");
     FAIL_BRK3(sfs_fcd(dirName), stdout,
             "Error: Attempt to cd to a new folder (%s) failed\n", dirName);
 

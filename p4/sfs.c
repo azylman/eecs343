@@ -30,15 +30,17 @@
 typedef struct inode_s {
 	bool isFile;
 	int parent;
-	struct inode_s* cont;
+	int cont;
 	char name[16];
+	int num;
 } inode;
 
 typedef struct inodeFile_s {
 	bool isFile;
 	int parent;
-	inode* cont;
+	int cont;
 	char name[16];
+	int num;
 	int sectors[6];
 	int filesize;
 } inodeFile;
@@ -46,8 +48,9 @@ typedef struct inodeFile_s {
 typedef struct inodeDir_s {
 	bool isFile;
 	int parent;
-	inode* cont;
+	int cont;
 	char name[16];
+	int num;
 	int children[6];
 } inodeDir;
 
@@ -66,6 +69,8 @@ typedef struct tokenResult_s {
 static int sectorBitmapSizeInSectors = -1;
 static int inodeBitmapSizeInSectors = -1;
 static int inodeArraySizeInSectors = -1;
+
+static int rootInodeNum = -1;
 
 static int cwd = -1;
 
@@ -87,10 +92,11 @@ int getNextFreeInode();
 
 int createInode();
 inode* getInode(int);
+void saveInode(inode*);
 
-void initDir(inodeDir*, int, inode*, char[16]);
-void initFile(inodeFile*, int, inode*, char[16]);
-void initInode(inode*, bool, int, inode*, char[16]);
+void initDir(inodeDir*, int, int, int, char[16]);
+void initFile(inodeFile*, int, int, int, char[16]);
+void initInode(inode*, int, bool, int, int, char[16]);
 
 void setBit(int*, int);
 void clearBit(int*, int);
@@ -213,34 +219,77 @@ int createInode() {
 inode* getInode(int inodeNum) {
 	int inodesPerSector = ceil( (double)SD_SECTORSIZE / (double)inodeSize );
 	int inodeSectorNumber = floor( (double)inodeNum / (double)inodesPerSector ) + sectorBitmapSizeInSectors + inodeBitmapSizeInSectors;
+	
 	Sector* inodeSector = getSector(inodeSectorNumber);
 	Sector* inodeList = inodeSector;
+	
 	int inodeOffset = inodeNum % inodesPerSector;
 	int byteOffset = inodeOffset * inodeSize;
 	inodeList += byteOffset / sizeof(Sector);
+	
+	inode* resultInode = malloc(inodeSize);
+	memcpy(resultInode, inodeList, inodeSize);
+	
 	free(inodeSector);
-	return (inode*)inodeList;
+	return resultInode;
 }
 
-void initDir(inodeDir* dir, int parent, inode* cont, char name[16]) {
+void saveInode(inode* INODE) {
+	int inodeNum = INODE->num;
+	int inodesPerSector = ceil( (double)SD_SECTORSIZE / (double)inodeSize );
+	int inodeSectorNumber = floor( (double)inodeNum / (double)inodesPerSector ) + sectorBitmapSizeInSectors + inodeBitmapSizeInSectors;
+	
+	Sector* inodeSector = getSector(inodeSectorNumber);
+	Sector* inodeList = inodeSector;
+	
+	int inodeOffset = inodeNum % inodesPerSector;
+	int byteOffset = inodeOffset * inodeSize;
+	inodeList += byteOffset / sizeof(Sector);
+	
+	if (INODE->isFile) {
+		inodeFile* inMem = (inodeFile*)INODE;
+		inodeFile* onDisk = (inodeFile*)inodeList;
+		
+		onDisk->parent = inMem->parent;
+		onDisk->cont = inMem->cont;
+		strcpy(onDisk->name, inMem->name);
+		memcpy(onDisk->sectors, inMem->sectors, sizeof(int)*6);
+		onDisk->filesize = inMem->filesize;
+	} else {
+		inodeDir* inMem = (inodeDir*)INODE;
+		inodeDir* onDisk = (inodeDir*)inodeList;
+		
+		onDisk->parent = inMem->parent;
+		onDisk->cont = inMem->cont;
+		strcpy(onDisk->name, inMem->name);
+		memcpy(onDisk->children, inMem->children, sizeof(int)*6);
+	}
+	
+	SD_write(inodeSectorNumber, inodeSector);
+	
+	free(inodeSector);
+}
+
+void initDir(inodeDir* dir, int inodeNum, int parent, int cont, char name[16]) {
 	int i;
 	for (i = 0; i < 6; ++i) {
 		dir->children[i] = -1;
 	}
-	initInode((inode*) dir, 0, parent, cont, name);
+	initInode((inode*) dir, inodeNum, 0, parent, cont, name);
 }
-void initFile(inodeFile* file, int parent, inode* cont, char name[16]) {
+void initFile(inodeFile* file, int inodeNum, int parent, int cont, char name[16]) {
 	int i;
 	for (i = 0; i < 6; ++i) {
 		file->sectors[i] = -1;
 	}
-	initInode((inode*) file, 0, parent, cont, name);
+	initInode((inode*) file, inodeNum, 1, parent, cont, name);
 }
-void initInode(inode* INODE, bool isFile, int parent, inode* cont, char name[16]) {
+void initInode(inode* INODE, int inodeNum, bool isFile, int parent, int cont, char name[16]) {
 	INODE->isFile = isFile;
 	INODE->parent = parent;
 	INODE->cont = cont;
 	strcpy(INODE->name, name);
+	INODE->num = inodeNum;
 }
 
 void setBit(int* sequence, int bitNum) {
@@ -274,16 +323,28 @@ void initSector(int sector) {
 }
 
 tokenResult* parsePath(char* path) {
+
+	char* pathCopy = malloc(sizeof(char) * 20);
+	
+	strcpy(pathCopy, path);
+	printf("Creating the token result\n");
 	tokenResult* tokens = malloc(sizeof(tokenResult));
+	printf("Creating the tokens\n");
 	tokens->tokens = malloc(MAXPATHLEN);
+	printf("Getting our first token\n");
 	char* token;
-	token = strtok(path, "/");
+	token = strtok(pathCopy, "/");
+	printf("Looping over our tokens\n");
 	int numTokens = 0;
 	while (token != NULL) {
-		tokens->tokens[numTokens] = (char*)malloc(sizeof(char) * 16);
+		printf("Found token %s\n", token);
+		tokens->tokens[numTokens] = (char*)malloc(sizeof(char) * 17);
 		strcpy(tokens->tokens[numTokens], token);
 		numTokens++;
+		token = strtok(NULL, "/");
 	}
+	
+	free(pathCopy);
 	tokens->numTokens = numTokens;
 	return tokens;
 }
@@ -292,17 +353,26 @@ void addChild(inodeDir* parent, int childNum) {
 	int i;
 	bool added = 0;
 	for (i = 0; i < 6; i++) {
+		//printf("The child at position %i is %i\n", i, parent->children[i]);
 		if (parent->children[i] == -1) {
+			//printf("Adding the child at position %i\n", i);
 			added = 1;
 			parent->children[i] = childNum;
 		}
 	}
 	if (!added) {
 		if (parent->cont == 0) {
-			inode* contInode = getInode(createInode());
-			parent->cont = contInode;
+			int contInodeNum = createInode();
+			inodeDir* contInode = (inodeDir*)getInode(contInodeNum);
+			initDir(contInode, contInodeNum, -1, -1, "");
+			parent->cont = contInodeNum;
+			saveInode((inode*)parent);
+			saveInode((inode*)contInode);
+			free(contInode);
 		}
-		addChild((inodeDir*)parent->cont, childNum);
+		inode* contInode = getInode(parent->cont);
+		addChild((inodeDir*)contInode, childNum);
+		free(contInode);
 	}
 }
 
@@ -331,10 +401,16 @@ int sfs_mkfs() {
 	
 	//printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeArraySizeInSectors);
 	
-	cwd = createInode(); // initialize current working directory to root inode
+	rootInodeNum = createInode();
+	cwd = rootInodeNum; // initialize current working directory to root inode
 	
 	inodeDir* rootInode = (inodeDir*)getInode(cwd);
-	initDir(rootInode, -1, 0, "");
+	initDir(rootInode, rootInodeNum, -1, 0, "");
+	saveInode((inode*)rootInode);
+	
+	for (i = 0; i < 6; ++i) {
+		printf("Root node %p has a child of %i at position %i\n", rootInode, rootInode->children[i], i);
+	}
 	
     return 0;
 } /* !sfs_mkfs */
@@ -348,13 +424,23 @@ int sfs_mkfs() {
  *
  */
 int sfs_mkdir(char *name) {
-    	bool error = 0;
+    bool error = 0;
 	bool absolute = name[0] == '/';
-	int result = absolute? 0 : cwd;
+	int result = absolute ? rootInodeNum : cwd;
+	printf("Using inode %i as the starting point\n", result);
 	inodeDir* workingDir = (inodeDir*)getInode(result);
+	
+	int j;
+	for (j = 0; j < 6; ++j) {
+		printf("Working directory %p has a child %i at position %i\n", workingDir, workingDir->children[j], j);
+	}
+	
+	printf("Parsing the path %s\n", name);
 	tokenResult* tokens = parsePath(name);
+	printf("Beginning iterating over tokens\n");
 	int i;
 	for (i = 0; i < tokens->numTokens - 1; i++) {
+		printf("Hey, I'm in the for loop!\n");
 		if (strcmp(tokens->tokens[i], ".") == 0) {
 			// do nothing
 		} else {
@@ -388,16 +474,26 @@ int sfs_mkdir(char *name) {
 						}
 					}
 					if (found) break;
-				} while( (workingDirCont = (inodeDir*)workingDirCont->cont) != 0);
+				} while( (workingDirCont = (inodeDir*)getInode(workingDirCont->cont)) != 0);
 				if (!found) {
 					error = 1;
 				}
 			}
 		}
 	}
+	
+	printf("Done iterating over tokens\n");
+	
+	for (i = 0; i < 6; ++i) {
+		printf("Working directory %p has a child %i at position %i\n", workingDir, workingDir->children[i], i);
+	}
+	
 	if (!error) {
+		printf("Creating new inode\n");
 		int newInode = createInode();
-		initDir((inodeDir*)getInode(newInode), result, 0, tokens->tokens[tokens->numTokens - 1]);
+		printf("Initializing directory\n");
+		initDir((inodeDir*)getInode(newInode), newInode, result, 0, tokens->tokens[tokens->numTokens - 1]);
+		printf("Adding a child\n");
 		addChild(workingDir, newInode);
 		return 0;
 	} else {
@@ -454,7 +550,7 @@ int sfs_fcd(char* name) {
 						}
 					}
 					if (found) break;
-				} while( (workingDirCont = (inodeDir*)workingDirCont->cont) != 0);
+				} while( (workingDirCont = (inodeDir*)getInode(workingDirCont->cont)) != 0);
 				if (!found) {
 					error = 1;
 				}
@@ -483,11 +579,11 @@ int sfs_ls(FILE* f) {
 	do {
 		int i;
 		for (i = 0; i < 6; ++i) {
-			if (cwi->children[i] != 0) {
+			if (cwi->children[i] != -1) {
 				fprintf(f, "%s\n", getInode(cwi->children[i])->name);
 			}
 		}
-	} while( (cwi = (inodeDir*)cwi->cont) != 0);
+	} while( (cwi = (inodeDir*)getInode(cwi->cont)) != 0);
     return 0;
 } /* !sfs_ls */
 
