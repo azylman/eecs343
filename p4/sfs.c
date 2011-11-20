@@ -47,7 +47,7 @@ typedef struct inodeDir_s {
 	inode* parent;
 	inode* cont;
 	char name[16];
-	inode* children[6];
+	int children[6];
 } inodeDir;
 
 typedef struct fileDescriptor_s {
@@ -339,7 +339,7 @@ int sfs_ls(FILE* f) {
 		int i;
 		for (i = 0; i < 6; ++i) {
 			if (cwi->children[i] != 0) {
-				fprintf(f, "%s\n", cwi->children[i]->name);
+				fprintf(f, "%s\n", getInode(cwi->children[i])->name);
 			}
 		}
 	} while( (cwi = (inodeDir*)cwi->cont) != 0);
