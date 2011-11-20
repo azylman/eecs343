@@ -279,13 +279,11 @@ int sfs_mkfs() {
 	
 	//printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeArraySizeInSectors);
 	
-	int rootInodeNum = createInode();
+	cwd = createInode(); // initialize current working directory to root inode
 	
-	inodeDir* rootInode = (inodeDir*)getInode(rootInodeNum);
-	rootInode->isFile = 0;
-	rootInode->parent = 0;
-	rootInode->cont = 0;
-	rootInode->name[0] = '\0';
+	inodeDir* rootInode = (inodeDir*)getInode(cwd);
+	initDir(rootInode, 0, 0, "");
+	
     return 0;
 } /* !sfs_mkfs */
 
