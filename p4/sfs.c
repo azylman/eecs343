@@ -22,20 +22,21 @@
 #include <math.h>
 #include <stdbool.h>
 #include <string.h>
+#include <sys/param.h>
  
 #include "sfs.h"
 #include "sdisk.h"
 
 typedef struct inode_s {
 	bool isFile;
-	struct inode_s* parent;
+	int parent;
 	struct inode_s* cont;
 	char name[16];
 } inode;
 
 typedef struct inodeFile_s {
 	bool isFile;
-	inode* parent;
+	int parent;
 	inode* cont;
 	char name[16];
 	int sectors[6];
@@ -44,7 +45,7 @@ typedef struct inodeFile_s {
 
 typedef struct inodeDir_s {
 	bool isFile;
-	inode* parent;
+	int parent;
 	inode* cont;
 	char name[16];
 	int children[6];
@@ -56,6 +57,11 @@ typedef struct fileDescriptor_s {
 	char* data;
 	struct fileDescriptor_s* next;
 } fileDescriptor;
+
+typedef struct tokenResult_s {
+	int numTokens;
+	char** tokens;
+} tokenResult;
 
 static int sectorBitmapSizeInSectors = -1;
 static int inodeBitmapSizeInSectors = -1;
@@ -82,15 +88,19 @@ int getNextFreeInode();
 int createInode();
 inode* getInode(int);
 
-void initDir(inodeDir*, inode*, inode*, char[16]);
-void initFile(inodeFile*, inode*, inode*, char[16]);
-void initInode(inode*, bool, inode*, inode*, char[16]);
+void initDir(inodeDir*, int, inode*, char[16]);
+void initFile(inodeFile*, int, inode*, char[16]);
+void initInode(inode*, bool, int, inode*, char[16]);
 
 void setBit(int*, int);
 void clearBit(int*, int);
 void toggleBit(int*, int);
 int getBit(int*, int);
 void initSector(int);
+
+tokenResult* parsePath(char*);
+
+void addChild(inodeDir*, int);
 
 Sector* getSector(int sector) {
 	Sector* retrievedSector = malloc(sizeof(Sector));
@@ -212,21 +222,21 @@ inode* getInode(int inodeNum) {
 	return (inode*)inodeList;
 }
 
-void initDir(inodeDir* dir, inode* parent, inode* cont, char name[16]) {
+void initDir(inodeDir* dir, int parent, inode* cont, char name[16]) {
 	int i;
 	for (i = 0; i < 6; ++i) {
-		dir->children[i] = 0;
+		dir->children[i] = -1;
 	}
 	initInode((inode*) dir, 0, parent, cont, name);
 }
-void initFile(inodeFile* file, inode* parent, inode* cont, char name[16]) {
+void initFile(inodeFile* file, int parent, inode* cont, char name[16]) {
 	int i;
 	for (i = 0; i < 6; ++i) {
 		file->sectors[i] = -1;
 	}
 	initInode((inode*) file, 0, parent, cont, name);
 }
-void initInode(inode* INODE, bool isFile, inode* parent, inode* cont, char name[16]) {
+void initInode(inode* INODE, bool isFile, int parent, inode* cont, char name[16]) {
 	INODE->isFile = isFile;
 	INODE->parent = parent;
 	INODE->cont = cont;
@@ -263,6 +273,39 @@ void initSector(int sector) {
 	free(bitmapSector);
 }
 
+tokenResult* parsePath(char* path) {
+	tokenResult* tokens = malloc(sizeof(tokenResult));
+	tokens->tokens = malloc(MAXPATHLEN);
+	char* token;
+	token = strtok(path, "/");
+	int numTokens = 0;
+	while (token != NULL) {
+		tokens->tokens[numTokens] = (char*)malloc(sizeof(char) * 16);
+		strcpy(tokens->tokens[numTokens], token);
+		numTokens++;
+	}
+	tokens->numTokens = numTokens;
+	return tokens;
+}
+
+void addChild(inodeDir* parent, int childNum) {
+	int i;
+	bool added = 0;
+	for (i = 0; i < 6; i++) {
+		if (parent->children[i] == -1) {
+			added = 1;
+			parent->children[i] = childNum;
+		}
+	}
+	if (!added) {
+		if (parent->cont == 0) {
+			inode* contInode = getInode(createInode());
+			parent->cont = contInode;
+		}
+		addChild((inodeDir*)parent->cont, childNum);
+	}
+}
+
 /*
  * sfs_mkfs: use to build your filesystem
  *
@@ -291,7 +334,7 @@ int sfs_mkfs() {
 	cwd = createInode(); // initialize current working directory to root inode
 	
 	inodeDir* rootInode = (inodeDir*)getInode(cwd);
-	initDir(rootInode, 0, 0, "");
+	initDir(rootInode, -1, 0, "");
 	
     return 0;
 } /* !sfs_mkfs */
@@ -305,10 +348,61 @@ int sfs_mkfs() {
  *
  */
 int sfs_mkdir(char *name) {
-    // parse the name to get the parents and the name of the new directory
-	// iterate over the inodes until you find the subdirectory you're supposed to create it at
-	// create it
-    return -1;
+    	bool error = 0;
+	bool absolute = name[0] == '/';
+	int result = absolute? 0 : cwd;
+	inodeDir* workingDir = (inodeDir*)getInode(result);
+	tokenResult* tokens = parsePath(name);
+	int i;
+	for (i = 0; i < tokens->numTokens - 1; i++) {
+		if (strcmp(tokens->tokens[i], ".") == 0) {
+			// do nothing
+		} else {
+			if (strcmp(tokens->tokens[i], "..") == 0) {
+				if (workingDir->parent != -1) {
+					workingDir = (inodeDir*)getInode(workingDir->parent);
+					result = workingDir->parent;
+				} else {
+					error = 1;
+				}
+			} else {
+				inodeDir* workingDirCont = workingDir;
+				bool found = 0;
+				do {
+					int j;
+					for (j = 0; j < 6; j++) {
+						if (workingDirCont->children[j] != -1) {
+							inode* child = getInode(workingDirCont->children[j]);
+							if (strcmp(child->name, tokens->tokens[i]) == 0) {
+								if (!child->isFile) {
+									result = workingDirCont->children[j];
+									workingDir = (inodeDir*)child;
+									found = 1;
+									break;
+								} else {
+									error = 1;
+									found = 1;
+									break;
+								}
+							}
+						}
+					}
+					if (found) break;
+				} while( (workingDirCont = (inodeDir*)workingDirCont->cont) != 0);
+				if (!found) {
+					error = 1;
+				}
+			}
+		}
+	}
+	if (!error) {
+		int newInode = createInode();
+		initDir((inodeDir*)getInode(newInode), result, 0, tokens->tokens[tokens->numTokens - 1]);
+		addChild(workingDir, newInode);
+		return 0;
+	} else {
+		return -1;
+	}
 } /* !sfs_mkdir */
 
 /*
@@ -320,8 +414,59 @@ int sfs_mkdir(char *name) {
  *
  */
 int sfs_fcd(char* name) {
-	// parse the path and iterate through all the inodes until we find the new one
-    return -1;
+	bool error = 0;
+	bool absolute = name[0] == '/';
+	int result = absolute? 0 : cwd;
+	inodeDir* workingDir = (inodeDir*)getInode(result);
+	tokenResult* tokens = parsePath(name);
+	int i;
+	for (i = 0; i < tokens->numTokens; i++) {
+		if (strcmp(tokens->tokens[i], ".") == 0) {
+			// do nothing
+		} else {
+			if (strcmp(tokens->tokens[i], "..") == 0) {
+				if (workingDir->parent != -1) {
+					workingDir = (inodeDir*)getInode(workingDir->parent);
+					result = workingDir->parent;
+				} else {
+					error = 1;
+				}
+			} else {
+				inodeDir* workingDirCont = workingDir;
+				bool found = 0;
+				do {
+					int j;
+					for (j = 0; j < 6; j++) {
+						if (workingDirCont->children[j] != -1) {
+							inode* child = getInode(workingDirCont->children[j]);
+							if (strcmp(child->name, tokens->tokens[i]) == 0) {
+								if (!child->isFile) {
+									result = workingDirCont->children[j];
+									workingDir = (inodeDir*)child;
+									found = 1;
+									break;
+								} else {
+									error = 1;
+									found = 1;
+									break;
+								}
+							}
+						}
+					}
+					if (found) break;
+				} while( (workingDirCont = (inodeDir*)workingDirCont->cont) != 0);
+				if (!found) {
+					error = 1;
+				}
+			}
+		}
+	}
+	if (!error) {
+		cwd = result;
+		return 0;
+	} else {
+		return -1;
+	}
 } /* !sfs_fcd */
 
 /*
