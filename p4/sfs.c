@@ -21,6 +21,7 @@
 
 #include <math.h>
 #include <stdbool.h>
+#include <string.h>
  
 #include "sfs.h"
 #include "sdisk.h"
@@ -79,6 +80,10 @@ int getNextFreeInode();
 
 int createInode();
 inode* getInode(int);
+
+void initDir(inodeDir*, inode*, inode*, char[16]);
+void initFile(inodeDir*, inode*, inode*, char[16]);
+void initInode(inode*, bool, inode*, inode*, char[16]);
 
 void setBit(int*, int);
 void clearBit(int*, int);
@@ -206,6 +211,19 @@ inode* getInode(int inodeNum) {
 	return (inode*)inodeList;
 }
 
+void initDir(inodeDir* dir, inode* parent, inode* cont, char name[16]) {
+	initInode((inode*) dir, 0, parent, cont, name);
+}
+void initFile(inodeDir* file, inode* parent, inode* cont, char name[16]) {
+	initInode((inode*) file, 0, parent, cont, name);
+}
+void initInode(inode* INODE, bool isFile, inode* parent, inode* cont, char name[16]) {
+	INODE->isFile = isFile;
+	INODE->parent = parent;
+	INODE->cont = cont;
+	strcpy(INODE->name, name);
+}
+
 void setBit(int* sequence, int bitNum) {
 	*sequence |= 1 << bitNum;
 }
@@ -261,9 +279,13 @@ int sfs_mkfs() {
 	
 	//printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeArraySizeInSectors);
 	
-	int rootInode = createInode();
+	int rootInodeNum = createInode();
 	
-	
+	inodeDir* rootInode = (inodeDir*)getInode(rootInodeNum);
+	rootInode->isFile = 0;
+	rootInode->parent = 0;
+	rootInode->cont = 0;
+	rootInode->name[0] = '\0';
     return 0;
 } /* !sfs_mkfs */
 
