@@ -56,16 +56,16 @@ handin: cleanAll
 	${CC} *.c
 
 testsd: ${SRCS_SD}
-	${CC} ${CFLAGS} -o $@ ${SRCS_SD}
+	${CC} ${CFLAGS} -o $@ ${SRCS_SD} 
 
 testfs: ${SRCS_FS}
-	${CC} ${CFLAGS} -o $@ ${SRCS_FS}
+	${CC} ${CFLAGS} -o $@ ${SRCS_FS} 
 
 testfs-ec: ${SRCS_FS}
-	${CC} ${CFLAGS} -DEXTRA_CREDIT -o $@ ${SRCS_FS}
+	${CC} ${CFLAGS} -DEXTRA_CREDIT -o $@ ${SRCS_FS} 
 
 testfs-compTest: ${SRCS_FS}
-	${CC} ${CFLAGS} -DCOMPETITION_TEST -o $@ ${SRCS_FS}
+	${CC} ${CFLAGS} -DCOMPETITION_TEST -o $@ ${SRCS_FS} 
 
 leak: all
 	valgrind -v --tool=memcheck --show-reachable=yes --leak-check=yes ./testfs -f test.dat; \
