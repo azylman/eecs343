@@ -25,11 +25,47 @@
 #include "sfs.h"
 #include "sdisk.h"
 
+typedef struct inode_s {
+	bool isFile;
+	struct inode_s* parent;
+	struct inode_s* cont;
+	char name[16];
+} inode;
+
+typedef struct inodeFile_s {
+	bool isFile;
+	inode* parent;
+	inode* cont;
+	char name[16];
+	int sectors[6];
+	int filesize;
+} inodeFile;
+
+typedef struct inodeDir_s {
+	bool isFile;
+	inode* parent;
+	inode* cont;
+	char name[16];
+	int children[6];
+} inodeDir;
+
+typedef struct fileDescriptor_s {
+	inode* INODE;
+	int currentPos;
+	char* data;
+} fileDescriptor;
+
 static int sectorBitmapSizeInSectors = -1;
 static int inodeBitmapSizeInSectors = -1;
 static int inodeArraySizeInSectors = -1;
 
+static int cwd = -1;
+
+// some static file containing info on all open files
+
 static short DEBUG = 0;
+
+static int inodeSize = sizeof(inodeFile) > sizeof(inodeDir) ? sizeof(inodeFile) : sizeof(inodeDir);
 
 Sector* getSector(int);
 
@@ -42,6 +78,7 @@ void markInodeAsNotUsed(int);
 int getNextFreeInode();
 
 int createInode();
+inode* getInode(int);
 
 void setBit(int*, int);
 void clearBit(int*, int);
@@ -120,7 +157,7 @@ int getNextFreeInode() {
 	int secNum = sectorBitmapSizeInSectors;
 	
 	Sector* bitmap = getSector(secNum);
-	int* curPos = bitmap;
+	int* curPos = (int*)bitmap;
 	
 	if (DEBUG) printf("Our bitmap is %i, ", *(int*)bitmap);
 	
@@ -135,7 +172,7 @@ int getNextFreeInode() {
 			secNum++;
 			free(bitmap);
 			bitmap = getSector(secNum);
-			curPos = bitmap;
+			curPos = (int*)bitmap;
 		}
 	}
 	
@@ -157,6 +194,18 @@ int createInode() {
 	return inodeNum;
 }
 
+inode* getInode(int inodeNum) {
+	int inodesPerSector = ceil( (double)SD_SECTORSIZE / (double)inodeSize );
+	int inodeSectorNumber = floor( (double)inodeNum / (double)inodesPerSector ) + sectorBitmapSizeInSectors + inodeBitmapSizeInSectors;
+	Sector* inodeSector = getSector(inodeSectorNumber);
+	Sector* inodeList = inodeSector;
+	int inodeOffset = inodeNum % inodesPerSector;
+	int byteOffset = inodeOffset * inodeSize;
+	inodeList += byteOffset / sizeof(Sector);
+	free(inodeSector);
+	return (inode*)inodeList;
+}
+
 void setBit(int* sequence, int bitNum) {
 	*sequence |= 1 << bitNum;
 }
@@ -175,7 +224,7 @@ void toggleBit(int* sequence, int bitNum) {
 
 void initSector(int sector) {
 	Sector* bitmapSector = malloc(sizeof(Sector));
-	int* intBoundary = bitmapSector;
+	int* intBoundary = (int*)bitmapSector;
 	SD_read(sector, bitmapSector);
 	int i;
 	for (i = 0; i < SD_SECTORSIZE / sizeof(int); i++) {
@@ -186,42 +235,6 @@ void initSector(int sector) {
 	SD_write(sector, bitmapSector);
 	free(bitmapSector);
 }
-
-typedef struct inode_s {
-	bool isFile;
-	struct inode_s* parent;
-	struct inode_s* cont;
-	char name[16];
-} inode;
-
-typedef struct inodeFile_s {
-	bool isFile;
-	inode* parent;
-	inode* cont;
-	char name[16];
-	int sectors[6];
-	int filesize;
-} inodeFile;
-
-typedef struct inodeDir_s {
-	bool isFile;
-	inode* parent;
-	inode* cont;
-	char name[16];
-	int children[6];
-} inodeDir;
-
-typedef struct fileDescriptor_s {
-	inode* INODE;
-	int currentPos;
-	char* data;
-} fileDescriptor;
-
-static int inodeSize = sizeof(inodeFile) > sizeof(inodeDir) ? sizeof(inodeFile) : sizeof(inodeDir);
-
-static int cwd = -1;
-
-// some static file containing info on all open files
 
 /*
  * sfs_mkfs: use to build your filesystem
@@ -249,6 +262,7 @@ int sfs_mkfs() {
 	//printf("Our sector bitmap is %i sectors, there are %i inodes, our inode bitmap is %i sectors, and our inode list is %i sectors\n", sectorBitmapSizeInSectors, numInodes, inodeBitmapSizeInSectors, inodeArraySizeInSectors);
 	
 	int rootInode = createInode();
+	
 	
     return 0;
 } /* !sfs_mkfs */
