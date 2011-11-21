@@ -55,7 +55,7 @@ typedef struct inodeDir_s {
 } inodeDir;
 
 typedef struct fileDescriptor_s {
-	int fd;
+	int num;
 	inode* INODE;
 	int currentPos;
 	char* data;
@@ -111,6 +111,9 @@ void freeToken(tokenResult*);
 void addChild(inodeDir*, int);
 
 inode* getCont(inode*);
+
+fileDescriptor* removeFd(int);
+void deleteFd(int);
 
 Sector* getSector(int sector) {
 	Sector* retrievedSector = malloc(sizeof(Sector));
@@ -399,6 +402,34 @@ inode* getCont(inode* INODE) {
 	int contInodeNum = INODE->cont;
 	free(INODE);
 	return getInode(contInodeNum);
+}
+
+fileDescriptor* removeFd(int fdNum) {
+	fileDescriptor* fd = fdList;
+	if (fd == NULL) {
+		return NULL;
+	}
+	if (fd->num == fdNum) {
+		fdList = fdList->next;
+		return fdList;
+	}
+	while (fd->next != NULL) {
+		if (fd->next->num == fdNum) {
+			fd->next = fd->next->next;
+			return fd->next;
+		}
+		fd = fd->next;
+	}
+	return NULL;
+}
+
+void deleteFd(int fdNum) {
+	fileDescriptor* fd = removeFd(fdNum);
+	if (fd != NULL) {
+		free(fd->INODE);
+		free(fd->data);
+		free(fd);
+	}
 }
 
 /*
