@@ -910,9 +910,15 @@ int sfs_fwrite(int fileID, char *buffer, int length) {
  *
  */
 int sfs_lseek(int fileID, int position) {
-    // get the file descriptor
-	// change the offset to position
-    return -1;
+    fileDescriptor* fd = findFd(fileID);
+	if (fd == NULL) {
+		return -1;
+	}
+	if (position > ((inodeFile*)fd->INODE)->filesize) {
+		return -1;
+	}
+	fd->curPos = position;
+    return position;
 } /* !sfs_lseek */
 
 /*
