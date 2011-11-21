@@ -363,7 +363,7 @@ void addChild(inodeDir* parent, int childNum) {
 		}
 	}
 	if (!added) {
-		printf("Checking if we need to add a continuing inode...\n");
+		if (DEBUG) printf("Checking if we need to add a continuing inode (%i) to %i...\n", parent->cont, parent->num);
 		if (parent->cont == -1) {
 			int contInodeNum = createInode();
 			inodeDir* contInode = (inodeDir*)getInode(contInodeNum);
@@ -372,7 +372,7 @@ void addChild(inodeDir* parent, int childNum) {
 			saveInode((inode*)contInode);
 			free(contInode);
 		}
-		printf("Adding the child to the continuing inode...\n");
+		if (DEBUG) printf("Adding the child to the continuing inode...\n");
 		inode* contInode = getInode(parent->cont);
 		addChild((inodeDir*)contInode, childNum);
 		saveInode(contInode);
@@ -439,7 +439,7 @@ int sfs_mkdir(char *name) {
 	bool absolute = name[0] == '/';
 	int result = absolute ? rootInodeNum : cwd;
 	inodeDir* workingDir = (inodeDir*)getInode(result);
-	
+	if (workingDir->num > 1) DEBUG = 1;
 	tokenResult* tokens = parsePath(name);
 	int i;
 	for (i = 0; i < tokens->numTokens - 1; i++) {
@@ -464,6 +464,7 @@ int sfs_mkdir(char *name) {
 					for (j = 0; j < 6; j++) {
 						if (workingDirCont->children[j] != -1) {
 							inode* child = getInode(workingDirCont->children[j]);
+							
 							if (strcmp(child->name, tokens->tokens[i]) == 0) {
 								if (!child->isFile) {
 									printf("Setting result to %i\n", workingDirCont->children[j]);
@@ -493,19 +494,19 @@ int sfs_mkdir(char *name) {
 		int newInode = createInode();
 		inode* child = getInode(newInode);
 		
-		printf("Creating child %i with a parent of %i\n", newInode, result);
-		printf("Initializing directory...\n");
+		if (DEBUG) printf("Creating child %i with a parent of %i\n", newInode, result);
+		if (DEBUG) printf("Initializing directory...\n");
 		initDir((inodeDir*)child, newInode, result, -1, tokens->tokens[tokens->numTokens - 1]);
-		printf("Adding child...\n");
+		if (DEBUG) printf("Adding child...\n");
 		addChild(workingDir, newInode);
-		printf("Saving child...\n");
+		if (DEBUG) printf("Saving child...\n");
 		saveInode((inode*)child);
-		printf("Saving working directory...\n");
+		if (DEBUG) printf("Saving working directory...\n");
 		saveInode((inode*)workingDir);
 		
-		printf("Trying to free working directory...\n");
+		if (DEBUG) printf("Trying to free working directory...\n");
 		free(workingDir);
-		printf("Trying to free child...\n");
+		if (DEBUG) printf("Trying to free child...\n");
 		free(child);
 		return 0;
 	} else {
@@ -522,8 +523,6 @@ int sfs_mkdir(char *name) {
  *
  */
 int sfs_fcd(char* name) {
-
-	printf("Cding to %s\n", name);
 
 	bool error = 0;
 	bool absolute = name[0] == '/';
