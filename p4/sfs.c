@@ -91,6 +91,8 @@ void markInodeAsNotUsed(int);
 
 int getNextFreeInode();
 
+int getNextFreeSector();
+
 int createInode();
 inode* getInode(int);
 void saveInode(inode*);
@@ -191,6 +193,45 @@ int getNextFreeInode() {
 	int value = 0;
 	
 	int secNum = sectorBitmapSizeInSectors;
+	
+	Sector* bitmap = getSector(secNum);
+	int* curPos = (int*)bitmap;
+	
+	if (DEBUG) printf("Our bitmap is %i, ", *(int*)bitmap);
+	
+	while (*(int*)curPos == fullIntegerBitmap) {
+		if (DEBUG) printf("we need a new int boundary, ");
+		value += 32;
+		if (DEBUG) printf("our bitmap pointer goes from %p ", curPos);
+		curPos++;
+		if (DEBUG) printf("to %p, where the value of curPos is %i, ", curPos, *(int*)curPos);
+		
+		if (value / 8 % sizeof(Sector) == 0) {
+			if (DEBUG) printf("we need a new sector, ");
+			secNum++;
+			free(bitmap);
+			bitmap = getSector(secNum);
+			curPos = (int*)bitmap;
+		}
+	}
+	
+	while ((*(int*)curPos & 1) != 0) {
+		value++;
+		*(int*)curPos >>= 1;
+	}
+	
+	free(bitmap);
+	
+	if (DEBUG) printf("and our next free one is %i\n", value);
+	
+	return value;
+}
+
+int getNextFreeSector() {
+	int fullIntegerBitmap = ~0;
+	int value = 0;
+	
+	int secNum = 0;
 	
 	Sector* bitmap = getSector(secNum);
 	int* curPos = (int*)bitmap;
@@ -896,6 +937,12 @@ int sfs_fwrite(int fileID, char *buffer, int length) {
     // get the file descriptor
 	// find out which sectors comprise that file
 	// copy length bytes from the buffer into the sectors
+	fileDescriptor* fd = findFd(fileID);
+	int sizeDiff = fd->curPos + length - ((inodeFile*)fd->INODE)->filesize;
+	// if sizeDiff is positive, realloc to the right size and change filesize
+	// find out how many sectors we need to add based on the new filesize and the current number of sectors
+	// add any needed sectors to the inode
+	// copy the data from buffer to the correct position in data
     return -1;
 } /* !sfs_fwrite */
 
