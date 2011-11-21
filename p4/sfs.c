@@ -219,7 +219,7 @@ int createInode() {
 }
 
 inode* getInode(int inodeNum) {
-	int inodesPerSector = ceil( (double)SD_SECTORSIZE / (double)inodeSize );
+	int inodesPerSector = floor( (double)SD_SECTORSIZE / (double)inodeSize );
 	int inodeSectorNumber = floor( (double)inodeNum / (double)inodesPerSector ) + sectorBitmapSizeInSectors + inodeBitmapSizeInSectors;
 	
 	Sector* inodeSector = getSector(inodeSectorNumber);
@@ -238,7 +238,7 @@ inode* getInode(int inodeNum) {
 
 void saveInode(inode* INODE) {
 	int inodeNum = INODE->num;
-	int inodesPerSector = ceil( (double)SD_SECTORSIZE / (double)inodeSize );
+	int inodesPerSector = floor( (double)SD_SECTORSIZE / (double)inodeSize );
 	int inodeSectorNumber = floor( (double)inodeNum / (double)inodesPerSector ) + sectorBitmapSizeInSectors + inodeBitmapSizeInSectors;
 	
 	Sector* inodeSector = getSector(inodeSectorNumber);
@@ -272,7 +272,8 @@ void saveInode(inode* INODE) {
 		memcpy(onDiskDir->children, inMemDir->children, sizeof(int)*6);
 	}
 	
-	SD_write(inodeSectorNumber, inodeSector);
+	Sector* inodeSectorCopy = inodeSector;
+	SD_write(inodeSectorNumber, inodeSectorCopy);
 	
 	free(inodeSector);
 }
@@ -362,7 +363,8 @@ void addChild(inodeDir* parent, int childNum) {
 		}
 	}
 	if (!added) {
-		if (parent->cont == 0) {
+		printf("Checking if we need to add a continuing inode...\n");
+		if (parent->cont == -1) {
 			int contInodeNum = createInode();
 			inodeDir* contInode = (inodeDir*)getInode(contInodeNum);
 			initDir(contInode, contInodeNum, -1, -1, "");
@@ -370,6 +372,7 @@ void addChild(inodeDir* parent, int childNum) {
 			saveInode((inode*)contInode);
 			free(contInode);
 		}
+		printf("Adding the child to the continuing inode...\n");
 		inode* contInode = getInode(parent->cont);
 		addChild((inodeDir*)contInode, childNum);
 		saveInode(contInode);
@@ -435,7 +438,6 @@ int sfs_mkdir(char *name) {
     bool error = 0;
 	bool absolute = name[0] == '/';
 	int result = absolute ? rootInodeNum : cwd;
-	printf("Initially setting result to %i based on an absolute of %i (root is %i and cwd is %i)\n", result, absolute, rootInodeNum, cwd);
 	inodeDir* workingDir = (inodeDir*)getInode(result);
 	
 	tokenResult* tokens = parsePath(name);
@@ -492,14 +494,18 @@ int sfs_mkdir(char *name) {
 		inode* child = getInode(newInode);
 		
 		printf("Creating child %i with a parent of %i\n", newInode, result);
+		printf("Initializing directory...\n");
 		initDir((inodeDir*)child, newInode, result, -1, tokens->tokens[tokens->numTokens - 1]);
-		
+		printf("Adding child...\n");
 		addChild(workingDir, newInode);
-		
+		printf("Saving child...\n");
 		saveInode((inode*)child);
+		printf("Saving working directory...\n");
 		saveInode((inode*)workingDir);
 		
+		printf("Trying to free working directory...\n");
 		free(workingDir);
+		printf("Trying to free child...\n");
 		free(child);
 		return 0;
 	} else {
@@ -533,12 +539,10 @@ int sfs_fcd(char* name) {
 	
 	int i;
 	for (i = 0; i < tokens->numTokens; i++) {
-		printf("Checking token %s\n", tokens->tokens[i]);
 		if (strcmp(tokens->tokens[i], ".") == 0) {
 			// do nothing
 		} else {
 			if (strcmp(tokens->tokens[i], "..") == 0) {
-				printf("Recognizing token as a call to go to parent (parent of %i is %i)\n", workingDir->num, workingDir->parent);
 				if (workingDir->parent != -1) {
 					int parent = workingDir->parent;
 					result = workingDir->parent;
