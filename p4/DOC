@@ -1,0 +1,6 @@
+Alex Zylman
+Matthew Markwell
+
+
+In this project we've implemented a simple file system on top of a virtual disk.  We chose to implement our disk using bitmaps.  The first sector of our disk is a bitmap, with each bit representing a sector on the disk.  The bit is set to 1 if the sector is in use, and is initialized to 0 (which means it is not in use).  The second sector of our disk is also a bitmap, this one representing the inodes in our file system.  Similarly, the bits are set to 1 for used inodes and 0 for free inodes.  The first inode is set to always be the root node.  Several other sectors at the beginning of the disk are then used to store all the inodes (we stored 2000 because we didn't know how many we should have and that is the theoretical maximum needed because that is the number of sectors on the virtual disk).
+
