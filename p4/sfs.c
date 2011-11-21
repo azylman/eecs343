@@ -118,8 +118,8 @@ Sector* getSector(int sector) {
 
 // Mark a sector as in use in our bitmap
 void markSectorAsUsed(int sector) {
-	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
-	int sectorOffset = sector % SD_SECTORSIZE;
+	int bitmapSectorNumber = floor( sector / (SD_SECTORSIZE * 8) );
+	int sectorOffset = sector % (SD_SECTORSIZE * 8);
 	
 	Sector* bitmapSector = getSector(bitmapSectorNumber);
 	
@@ -133,8 +133,8 @@ void markSectorAsUsed(int sector) {
 
 // Mark a sector as not in use in our bitmap
 void markSectorAsNotUsed(int sector) {
-	int bitmapSectorNumber = floor( sector / SD_SECTORSIZE );
-	int sectorOffset = sector % SD_SECTORSIZE;
+	int bitmapSectorNumber = floor( sector / (SD_SECTORSIZE * 8) );
+	int sectorOffset = sector % (SD_SECTORSIZE * 8);
 	
 	Sector* bitmapSector = getSector(bitmapSectorNumber);
 	
@@ -147,8 +147,8 @@ void markSectorAsNotUsed(int sector) {
 }
 
 void markInodeAsUsed(int inodeNumber) {
-	int inodeSectorNumber = floor( inodeNumber / SD_SECTORSIZE ) + sectorBitmapSizeInSectors;
-	int sectorOffset = inodeNumber % SD_SECTORSIZE;
+	int inodeSectorNumber = floor( inodeNumber / (SD_SECTORSIZE * 8) ) + sectorBitmapSizeInSectors;
+	int sectorOffset = inodeNumber % (SD_SECTORSIZE * 8);
 	
 	Sector* inodeSector = getSector(inodeSectorNumber);
 	
@@ -161,8 +161,8 @@ void markInodeAsUsed(int inodeNumber) {
 }
 
 void markInodeAsNotUsed(int inodeNumber) {
-	int inodeSectorNumber = floor( inodeNumber / SD_SECTORSIZE ) + sectorBitmapSizeInSectors;
-	int sectorOffset = inodeNumber % SD_SECTORSIZE;
+	int inodeSectorNumber = floor( inodeNumber / (SD_SECTORSIZE * 8) ) + sectorBitmapSizeInSectors;
+	int sectorOffset = inodeNumber % (SD_SECTORSIZE * 8);
 	
 	Sector* inodeSector = getSector(inodeSectorNumber);
 	
@@ -434,13 +434,12 @@ int sfs_mkfs() {
  */
 int sfs_mkdir(char *name) {
 
-	printf("Creating folder %s\n", name);
+	if (DEBUG) printf("Creating folder %s\n", name);
 
     bool error = 0;
 	bool absolute = name[0] == '/';
 	int result = absolute ? rootInodeNum : cwd;
 	inodeDir* workingDir = (inodeDir*)getInode(result);
-	DEBUG = 1;
 	tokenResult* tokens = parsePath(name);
 	int i;
 	for (i = 0; i < tokens->numTokens - 1; i++) {
@@ -451,7 +450,7 @@ int sfs_mkdir(char *name) {
 				if (workingDir->parent != -1) {
 					int parent = workingDir->parent;
 					free(workingDir);
-					printf("Setting result to %i\n", workingDir->parent);
+					if (DEBUG) printf("Setting result to %i\n", workingDir->parent);
 					workingDir = (inodeDir*)getInode(parent);
 					result = workingDir->parent;
 				} else {
@@ -468,7 +467,7 @@ int sfs_mkdir(char *name) {
 							
 							if (strcmp(child->name, tokens->tokens[i]) == 0) {
 								if (!child->isFile) {
-									printf("Setting result to %i\n", workingDirCont->children[j]);
+									if (DEBUG) printf("Setting result to %i\n", workingDirCont->children[j]);
 									result = workingDirCont->children[j];
 									free(workingDir);
 									workingDir = (inodeDir*)child;
@@ -525,6 +524,7 @@ int sfs_mkdir(char *name) {
  */
 int sfs_fcd(char* name) {
 
+	if (DEBUG) printf("Cding into %s\n", name);
 	bool error = 0;
 	bool absolute = name[0] == '/';
 	int result = absolute? 0 : cwd;
@@ -549,6 +549,7 @@ int sfs_fcd(char* name) {
 					free(workingDir);
 					workingDir = (inodeDir*)getInode(parent);
 				} else {
+					if (DEBUG) printf("Setting error because we're going up and there's no parent\n");
 					error = 1;
 				}
 			} else {
@@ -559,6 +560,7 @@ int sfs_fcd(char* name) {
 					for (j = 0; j < 6; j++) {
 						if (workingDirCont->children[j] != -1) {
 							inode* child = getInode(workingDirCont->children[j]);
+							if (DEBUG) printf("Found a child %s\n", child->name);
 							if (strcmp(child->name, tokens->tokens[i]) == 0) {
 								if (!child->isFile) {
 									result = workingDirCont->children[j];
@@ -568,6 +570,7 @@ int sfs_fcd(char* name) {
 									break;
 								} else {
 									error = 1;
+									if (DEBUG) printf("Setting error because we tried to cd into a file\n");
 									found = 1;
 									break;
 								}
@@ -575,8 +578,10 @@ int sfs_fcd(char* name) {
 						}
 					}
 					if (found) break;
+					if (DEBUG) printf("Cont of current inode is %i\n", workingDirCont->cont);
 				} while( (workingDirCont = (inodeDir*)getCont((inode*)workingDirCont)) != 0);
 				if (!found) {
+					if (DEBUG) printf("Setting error because we didn't find the file. :(\n");
 					error = 1;
 				}
 			}

@@ -154,19 +154,18 @@ int runTests() {
 #ifndef COMPETITION_TEST
     f_ls_base = fopen("base.ls", "w");
     f_ls = f_ls_base;
-	/*
     RUN_TEST(initFSTest());
     RUN_TEST(createSimpleFileTest());
     RUN_TEST(createSimpleFileTest());
     RUN_TEST(createSimpleFileWriteReadTest());
     RUN_TEST(singleBigFileTest());
     RUN_TEST(multipleFilesTest());
-    RUN_TEST(createFolderTest());*/
+    RUN_TEST(createFolderTest());
     RUN_TEST(multipleFoldersTest());
-    /*RUN_TEST(appendFileTest());
+    RUN_TEST(appendFileTest());
     RUN_TEST(multipleOpenFilesTest());
     RUN_TEST(nestedFoldersTest());
-    RUN_TEST(errorTest());*/
+    RUN_TEST(errorTest());
 #else
     f_ls_compTest = fopen("compTest.ls", "w");
     f_ls = f_ls_compTest;
