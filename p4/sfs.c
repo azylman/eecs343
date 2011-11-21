@@ -55,6 +55,7 @@ typedef struct inodeDir_s {
 } inodeDir;
 
 typedef struct fileDescriptor_s {
+	int fd;
 	inode* INODE;
 	int currentPos;
 	char* data;
@@ -74,7 +75,7 @@ static int rootInodeNum = -1;
 
 static int cwd = -1;
 
-// some static file containing info on all open files
+static fileDescriptor* fdList = NULL;
 
 static short DEBUG = 0;
 
@@ -105,6 +106,7 @@ int getBit(int*, int);
 void initSector(int);
 
 tokenResult* parsePath(char*);
+void freeToken(tokenResult*);
 
 void addChild(inodeDir*, int);
 
@@ -353,6 +355,15 @@ tokenResult* parsePath(char* path) {
 	return tokens;
 }
 
+void freeToken(tokenResult* tokens) {
+	int i;
+	for (i = 0; i < tokens->numTokens; ++i) {
+		free(tokens->tokens[i]);
+	}
+	free(tokens->tokens);
+	free(tokens);
+}
+
 void addChild(inodeDir* parent, int childNum) {
 	int i;
 	bool added = 0;
@@ -508,8 +519,10 @@ int sfs_mkdir(char *name) {
 		free(workingDir);
 		if (DEBUG) printf("Trying to free child...\n");
 		free(child);
+		freeToken(tokens);
 		return 0;
 	} else {
+		freeToken(tokens);
 		return -1;
 	}
 } /* !sfs_mkdir */
@@ -587,6 +600,9 @@ int sfs_fcd(char* name) {
 			}
 		}
 	}
+	
+	freeToken(tokens);
+	
 	if (!error) {
 		free(workingDir);
 		cwd = result;
