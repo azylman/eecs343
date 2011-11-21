@@ -155,7 +155,7 @@ int runTests() {
     f_ls_base = fopen("base.ls", "w");
     f_ls = f_ls_base;
 	
-    RUN_TEST(initFSTest());
+    /*RUN_TEST(initFSTest());
 	RUN_TEST(createSimpleFileTest());
     RUN_TEST(createSimpleFileWriteReadTest());
 	RUN_TEST(nestedFoldersTest());
@@ -163,9 +163,9 @@ int runTests() {
     RUN_TEST(multipleFoldersTest());
 	RUN_TEST(singleBigFileTest());
     RUN_TEST(multipleFilesTest());
-	RUN_TEST(multipleOpenFilesTest());
+	RUN_TEST(multipleOpenFilesTest());*/
     
-    //RUN_TEST(appendFileTest());
+    RUN_TEST(appendFileTest());
     //RUN_TEST(errorTest());
 #else
     f_ls_compTest = fopen("compTest.ls", "w");

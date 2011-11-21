@@ -518,18 +518,23 @@ int createFd(inode* INODE) {
 	fd->INODE = INODE;
 	fd->curPos = 0; // should this be filesize instead?
 	printf("Malloc space for data\n");
-	fd->data = malloc(SD_SECTORSIZE * ceil( (double)inodeF->filesize / (double)SD_SECTORSIZE) );
-	printf("Copy the data over\n");
+	fd->data = malloc((double)SD_SECTORSIZE * ceil( (double)inodeF->filesize / (double)SD_SECTORSIZE) );
 	char* curPos = fd->data;
 	inodeFile* workingDirCont = malloc(inodeSize);
 	memcpy(workingDirCont, inodeF, inodeSize);
+	printf("Copy the data over (there should be %i sectors, and we're allocating enough space for %i)\n", countSectorsInFile((inodeFile*)fd->INODE), ceil( (double)inodeF->filesize / (double)SD_SECTORSIZE ));
+	int copied = 0;
 	do {
 		int i;
+		printf("Going one level down\n");
 		for (i = 0; i < 6; ++i) {
 			if (workingDirCont->sectors[i] != -1) {
+				printf("Copying a child to %p (copy #%i)\n", curPos, ++copied);
 				Sector* dataSector = getSector(workingDirCont->sectors[i]);
 				memcpy(curPos, dataSector, SD_SECTORSIZE);
+				printf("Trying to free %p\n", dataSector);
 				free(dataSector);
+				printf("Done freeing\n");
 				curPos += SD_SECTORSIZE;
 			}
 		}
