@@ -192,7 +192,8 @@ int getNextFreeInode() {
 		curPos++;
 		if (DEBUG) printf("to %p, where the value of curPos is %i, ", curPos, *(int*)curPos);
 		
-		if (value % sizeof(Sector) == 0) {
+		if (value / 8 % sizeof(Sector) == 0) {
+			if (DEBUG) printf("we need a new sector, ");
 			secNum++;
 			free(bitmap);
 			bitmap = getSector(secNum);
@@ -439,7 +440,7 @@ int sfs_mkdir(char *name) {
 	bool absolute = name[0] == '/';
 	int result = absolute ? rootInodeNum : cwd;
 	inodeDir* workingDir = (inodeDir*)getInode(result);
-	if (workingDir->num > 1) DEBUG = 1;
+	DEBUG = 1;
 	tokenResult* tokens = parsePath(name);
 	int i;
 	for (i = 0; i < tokens->numTokens - 1; i++) {
