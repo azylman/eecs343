@@ -154,17 +154,20 @@ int runTests() {
 #ifndef COMPETITION_TEST
     f_ls_base = fopen("base.ls", "w");
     f_ls = f_ls_base;
+	/*
     RUN_TEST(initFSTest());
     RUN_TEST(createSimpleFileTest());
     RUN_TEST(createSimpleFileTest());
     RUN_TEST(createSimpleFileWriteReadTest());
-    RUN_TEST(singleBigFileTest());
+	RUN_TEST(nestedFoldersTest());
+	RUN_TEST(createFolderTest());
+    RUN_TEST(multipleFoldersTest());*/
+	
+	
+    /*RUN_TEST(singleBigFileTest());
     RUN_TEST(multipleFilesTest());
-    RUN_TEST(createFolderTest());
-    RUN_TEST(multipleFoldersTest());
     RUN_TEST(appendFileTest());
-    RUN_TEST(multipleOpenFilesTest());
-    RUN_TEST(nestedFoldersTest());
+    RUN_TEST(multipleOpenFilesTest());*/
     RUN_TEST(errorTest());
 #else
     f_ls_compTest = fopen("compTest.ls", "w");
@@ -766,7 +769,7 @@ int verifyFile(char *fileName, char *data, int fsize) {
     FAIL_BRK3((sfs_fread(fd, data2, fsize) != fsize), stdout,
             "Error: failed to read %d bytes to %s, fd:%d\n", fsize, fileName,
             fd);
-
+	//printf("Buffer1: %s\nBuffer2:%s\n", data, data2);
     FAIL_BRK3(checkBuffers(data, data2, fsize, 0), stdout,
             "Error: contents didn't match\n");
 

@@ -92,6 +92,7 @@ void markInodeAsNotUsed(int);
 int getNextFreeInode();
 
 int getNextFreeSector();
+int useNextFreeSector();
 
 int createInode();
 inode* getInode(int);
@@ -123,6 +124,9 @@ int createFd(inode*);
 fileDescriptor* findFd(int);
 
 void writeFdToDisk(int);
+
+int countSectorsInFile(inodeFile*);
+void addSector(inodeFile*);
 
 Sector* getSector(int sector) {
 	Sector* retrievedSector = malloc(sizeof(Sector));
@@ -264,6 +268,12 @@ int getNextFreeSector() {
 	if (DEBUG) printf("and our next free one is %i\n", value);
 	
 	return value;
+}
+
+int useNextFreeSector() {
+	int sector = getNextFreeSector();
+	markSectorAsUsed(sector);
+	return sector;
 }
 
 int createInode() {
@@ -472,11 +482,17 @@ fileDescriptor* removeFd(int fdNum) {
 }
 
 void deleteFd(int fdNum) {
+	printf("Remove the file descriptor from the list\n");
 	fileDescriptor* fd = removeFd(fdNum);
+	printf("Did we find it? %i\n", fd != NULL);
 	if (fd != NULL) {
+		printf("Free the inode\n");
 		free(fd->INODE);
+		printf("Free the data\n");
 		free(fd->data);
+		printf("Free the fd\n");
 		free(fd);
+		printf("Done!\n");
 	}
 }
 
@@ -497,10 +513,11 @@ int createFd(inode* INODE) {
 	fileDescriptor* fd = getNewFd();
 	fd->INODE = INODE;
 	fd->curPos = 0; // should this be filesize instead?
-	fd->data = malloc(SD_SECTORSIZE * ceil(inodeF->filesize / SD_SECTORSIZE));
+	fd->data = malloc(SD_SECTORSIZE * ceil( (double)inodeF->filesize / (double)SD_SECTORSIZE) );
 	
 	char* curPos = fd->data;
-	inodeFile* workingDirCont = inodeF;
+	inodeFile* workingDirCont = malloc(inodeSize);
+	memcpy(workingDirCont, inodeF, inodeSize);
 	do {
 		int i;
 		for (i = 0; i < 6; ++i) {
@@ -529,7 +546,8 @@ void writeFdToDisk(int fdNum) {
 	saveInode(fd->INODE);
 	
 	char* curPos = fd->data;
-	inodeFile* workingDirCont = (inodeFile*)fd->INODE;
+	inodeFile* workingDirCont = malloc(inodeSize);
+	memcpy(workingDirCont, fd->INODE, inodeSize);
 	do {
 		int i;
 		for (i = 0; i < 6; ++i) {
@@ -537,10 +555,54 @@ void writeFdToDisk(int fdNum) {
 				Sector* dataSector = malloc(SD_SECTORSIZE);
 				memcpy(dataSector, curPos, SD_SECTORSIZE);
 				SD_write(workingDirCont->sectors[i], dataSector);
+				free(dataSector);
 				curPos += SD_SECTORSIZE;
 			}
 		}
 	} while( (workingDirCont = (inodeFile*)getCont((inode*)workingDirCont)) != 0);
+}
+
+int countSectorsInFile(inodeFile* inodeF) {
+	int value = 0;
+	inodeFile* workingDirCont = malloc(inodeSize);
+	memcpy(workingDirCont, inodeF, inodeSize);
+	do {
+		int i;
+		for (i = 0; i < 6; ++i) {
+			if (workingDirCont->sectors[i] != -1) {
+				value++;
+			}
+		}
+	} while( (workingDirCont = (inodeFile*)getCont((inode*)workingDirCont)) != 0);
+	return value;
+}
+
+void addSector(inodeFile* parent) {
+	int i;
+	bool added = 0;
+	for (i = 0; i < 6; i++) {
+		if (parent->sectors[i] == -1) {
+			added = 1;
+			parent->sectors[i] = useNextFreeSector();
+			break;
+		}
+	}
+	if (!added) {
+		if (DEBUG) printf("Checking if we need to add a continuing inode (%i) to %i...\n", parent->cont, parent->num);
+		if (parent->cont == -1) {
+			int contInodeNum = createInode();
+			inodeFile* contInode = (inodeFile*)getInode(contInodeNum);
+			initFile(contInode, contInodeNum, -1, -1, "");
+			parent->cont = contInodeNum;
+			saveInode((inode*)contInode);
+			free(contInode);
+		}
+		if (DEBUG) printf("Adding the child to the continuing inode...\n");
+		inode* contInode = getInode(parent->cont);
+		addSector((inodeFile*)contInode);
+		saveInode(contInode);
+		free(contInode);
+	}
 }
 
 /*
@@ -610,7 +672,8 @@ int sfs_mkdir(char *name) {
 					error = 1;
 				}
 			} else {
-				inodeDir* workingDirCont = workingDir;
+				inodeDir* workingDirCont = malloc(inodeSize);
+				memcpy(workingDirCont, workingDir, inodeSize);
 				bool found = 0;
 				do {
 					int j;
@@ -708,7 +771,8 @@ int sfs_fcd(char* name) {
 					error = 1;
 				}
 			} else {
-				inodeDir* workingDirCont = workingDir;
+				inodeDir* workingDirCont = malloc(inodeSize);
+				memcpy(workingDirCont, workingDir, inodeSize);
 				bool found = 0;
 				do {
 					int j;
@@ -791,9 +855,6 @@ int sfs_ls(FILE* f) {
  *
  */
 int sfs_fopen(char* name) {
-    // find the inode based on the name
-	// write file info to our file descriptors array
-	// and return the index into the array
 	bool error = 0;
 	bool absolute = name[0] == '/';
 	int result = absolute ? rootInodeNum : cwd;
@@ -814,7 +875,8 @@ int sfs_fopen(char* name) {
 					error = 1;
 				}
 			} else {
-				inodeDir* workingDirCont = workingDir;
+				inodeDir* workingDirCont = malloc(inodeSize);
+				memcpy(workingDirCont, workingDir, inodeSize);
 				bool found = 0;
 				do {
 					int j;
@@ -849,7 +911,8 @@ int sfs_fopen(char* name) {
 	if (!error) {
 		bool found = 0;
 		inode* child;
-		inodeDir* workingDirCont = workingDir;
+		inodeDir* workingDirCont = malloc(inodeSize);
+		memcpy(workingDirCont, workingDir, inodeSize);
 		do {
 			for (i = 0; i < 6; ++i) {
 				if (workingDirCont->children[i] != -1) {
@@ -863,6 +926,7 @@ int sfs_fopen(char* name) {
 			}
 			if (found) break;
 		} while( (workingDirCont = (inodeDir*)getCont((inode*)workingDirCont)) != 0);
+		
 		if (!found) {
 			int newInode = createInode();
 			child = getInode(newInode);
@@ -876,7 +940,9 @@ int sfs_fopen(char* name) {
 		int fdNum = createFd(child);
 		
 		free(workingDir);
+		
 		freeToken(tokens);
+		
 		return fdNum;
 	} else {
 		freeToken(tokens);
@@ -895,7 +961,9 @@ int sfs_fopen(char* name) {
  *
  */
 int sfs_fclose(int fileID) {
+	printf("Writing to disk...\n");
 	writeFdToDisk(fileID);
+	printf("Deleting the file descriptor...\n");
 	deleteFd(fileID);
     return 0;
 } /* !sfs_fclose */
@@ -917,7 +985,8 @@ int sfs_fread(int fileID, char *buffer, int length) {
 	}
 	char* curPos = fd->data;
 	curPos += fd->curPos;
-	int bytesToRead = length > ((inodeFile*)fd->INODE)->filesize - fd->curPos ? ((inodeFile*)fd->INODE)->filesize - fd->curPos : length;
+	int filesize = ((inodeFile*)fd->INODE)->filesize;
+	int bytesToRead = length > filesize - fd->curPos ? filesize - fd->curPos : length;
 	memcpy(buffer, curPos, bytesToRead);
 	fd->curPos += bytesToRead;
     return bytesToRead;
@@ -938,12 +1007,22 @@ int sfs_fwrite(int fileID, char *buffer, int length) {
 	// find out which sectors comprise that file
 	// copy length bytes from the buffer into the sectors
 	fileDescriptor* fd = findFd(fileID);
-	int sizeDiff = fd->curPos + length - ((inodeFile*)fd->INODE)->filesize;
-	// if sizeDiff is positive, realloc to the right size and change filesize
-	// find out how many sectors we need to add based on the new filesize and the current number of sectors
-	// add any needed sectors to the inode
-	// copy the data from buffer to the correct position in data
-    return -1;
+	int filesize = ((inodeFile*)fd->INODE)->filesize;
+	int sizeDiff = fd->curPos + length - filesize;
+	if (sizeDiff > 0) {
+		filesize += sizeDiff;
+		((inodeFile*)fd->INODE)->filesize += sizeDiff;
+	}
+	int numSectorsNeeded = ceil( (double)filesize / (double)SD_SECTORSIZE );
+	int numSectorsHave = countSectorsInFile((inodeFile*)fd->INODE);
+	int i;
+	for (i = 0; i < numSectorsNeeded - numSectorsHave; ++i) {
+		addSector((inodeFile*)fd->INODE);
+	}
+	
+	fd->data = realloc(fd->data, filesize);
+	memcpy(fd->data + fd->curPos, buffer, length);
+    return length;
 } /* !sfs_fwrite */
 
 /*
