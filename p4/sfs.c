@@ -469,7 +469,7 @@ fileDescriptor* removeFd(int fdNum) {
 	}
 	if (fd->num == fdNum) {
 		fdList = fdList->next;
-		return fdList;
+		return fd;
 	}
 	while (fd->next != NULL) {
 		if (fd->next->num == fdNum) {
@@ -497,12 +497,15 @@ void deleteFd(int fdNum) {
 }
 
 fileDescriptor* getNewFd() {
+	printf("Allocating space\n");
 	fileDescriptor* fd = malloc(sizeof(fileDescriptor));
+	printf("Does fdList exist? %i\n", fdList != NULL);
 	if (fdList != NULL) {
 		fd->num = fdList->num + 1;
 		fd->next = fdList;
 	} else {
 		fd->num = 1;
+		fd->next = NULL;
 	}
 	fdList = fd;
 	return fd;
@@ -510,11 +513,13 @@ fileDescriptor* getNewFd() {
 
 int createFd(inode* INODE) {
 	inodeFile* inodeF = (inodeFile*)INODE;
+	printf("Get a new file descriptor\n");
 	fileDescriptor* fd = getNewFd();
 	fd->INODE = INODE;
 	fd->curPos = 0; // should this be filesize instead?
+	printf("Malloc space for data\n");
 	fd->data = malloc(SD_SECTORSIZE * ceil( (double)inodeF->filesize / (double)SD_SECTORSIZE) );
-	
+	printf("Copy the data over\n");
 	char* curPos = fd->data;
 	inodeFile* workingDirCont = malloc(inodeSize);
 	memcpy(workingDirCont, inodeF, inodeSize);
@@ -529,7 +534,7 @@ int createFd(inode* INODE) {
 			}
 		}
 	} while( (workingDirCont = (inodeFile*)getCont((inode*)workingDirCont)) != 0);
-	
+	printf("Finished copying data\n");
 	return fd->num;
 }
 
@@ -861,6 +866,9 @@ int sfs_fopen(char* name) {
 	inodeDir* workingDir = (inodeDir*)getInode(result);
 	tokenResult* tokens = parsePath(name);
 	int i;
+	
+	printf("Begin searching for file %s\n", name);
+	
 	for (i = 0; i < tokens->numTokens - 1; i++) {
 		if (strcmp(tokens->tokens[i], ".") == 0) {
 			// do nothing
@@ -908,9 +916,12 @@ int sfs_fopen(char* name) {
 		}
 	}
 	
+	printf("End searching for file's directory path\n");
+	
 	if (!error) {
 		bool found = 0;
 		inode* child;
+		printf("Begin searching for child\n");
 		inodeDir* workingDirCont = malloc(inodeSize);
 		memcpy(workingDirCont, workingDir, inodeSize);
 		do {
@@ -927,6 +938,8 @@ int sfs_fopen(char* name) {
 			if (found) break;
 		} while( (workingDirCont = (inodeDir*)getCont((inode*)workingDirCont)) != 0);
 		
+		printf("End searching for child. Found? %i\n", found);
+		
 		if (!found) {
 			int newInode = createInode();
 			child = getInode(newInode);
@@ -937,12 +950,16 @@ int sfs_fopen(char* name) {
 			saveInode((inode*)workingDir);
 		}
 		
+		printf("Create the file descriptor\n");
 		int fdNum = createFd(child);
 		
+		printf("Free the working directory\n");
 		free(workingDir);
 		
+		printf("Free the tokens\n");
 		freeToken(tokens);
 		
+		printf("Return the fd num %i\n", fdNum);
 		return fdNum;
 	} else {
 		freeToken(tokens);
