@@ -324,13 +324,13 @@ void saveInode(inode* INODE) {
 	
 	onDisk->num = inMem->num;
 	
-	printf("Is the inode a file? %i\n", INODE->isFile);
+	if (DEBUG) printf("Is the inode a file? %i\n", INODE->isFile);
 	
 	if (INODE->isFile) {
 		inodeFile* inMemFile = (inodeFile*)INODE;
 		inodeFile* onDiskFile = (inodeFile*)inodeList;
 		
-		printf("The filesize is %i\n", inMemFile->filesize);
+		if (DEBUG) printf("The filesize is %i\n", inMemFile->filesize);
 		memcpy(onDiskFile->sectors, inMemFile->sectors, sizeof(int)*6);
 		onDiskFile->filesize = inMemFile->filesize;
 	} else {
@@ -486,24 +486,16 @@ fileDescriptor* removeFd(int fdNum) {
 }
 
 void deleteFd(int fdNum) {
-	printf("Remove the file descriptor from the list\n");
 	fileDescriptor* fd = removeFd(fdNum);
-	printf("Did we find it? %i\n", fd != NULL);
 	if (fd != NULL) {
-		printf("Free the inode\n");
 		free(fd->INODE);
-		printf("Free the data\n");
 		free(fd->data);
-		printf("Free the fd\n");
 		free(fd);
-		printf("Done!\n");
 	}
 }
 
 fileDescriptor* getNewFd() {
-	printf("Allocating space\n");
 	fileDescriptor* fd = malloc(sizeof(fileDescriptor));
-	printf("Does fdList exist? %i\n", fdList != NULL);
 	if (fdList != NULL) {
 		fd->num = fdList->num + 1;
 		fd->next = fdList;
@@ -517,35 +509,35 @@ fileDescriptor* getNewFd() {
 
 int createFd(inode* INODE) {
 	inodeFile* inodeF = (inodeFile*)INODE;
-	printf("Get a new file descriptor\n");
+	if (DEBUG) printf("Get a new file descriptor\n");
 	fileDescriptor* fd = getNewFd();
 	fd->INODE = INODE;
 	fd->curPos = 0; // should this be filesize instead?
 	int numSectors = ceil( (double)inodeF->filesize / (double)SD_SECTORSIZE );
 	int dataSize = (int)(SD_SECTORSIZE * numSectors);
-	printf("Malloc space for %i sectors (%i bytes) based on a filesize of %i\n", numSectors, dataSize, inodeF->filesize);
+	if (DEBUG) printf("Malloc space for %i sectors (%i bytes) based on a filesize of %i\n", numSectors, dataSize, inodeF->filesize);
 	fd->data = malloc(dataSize);
 	char* curPos = fd->data;
 	inodeFile* workingDirCont = malloc(inodeSize);
 	memcpy(workingDirCont, inodeF, inodeSize);
-	printf("Copy the data over (there should be %i sectors, and we're allocating %i bytes)\n", countSectorsInFile((inodeFile*)fd->INODE), dataSize);
+	if (DEBUG) printf("Copy the data over (there should be %i sectors, and we're allocating %i bytes)\n", countSectorsInFile((inodeFile*)fd->INODE), dataSize);
 	int copied = 0;
 	do {
 		int i;
-		printf("Going one level down\n");
+		if (DEBUG) printf("Going one level down\n");
 		for (i = 0; i < 6; ++i) {
 			if (workingDirCont->sectors[i] != -1) {
-				printf("Copying a child to %p (copy #%i)\n", curPos, ++copied);
+				if (DEBUG) printf("Copying a child to %p (copy #%i)\n", curPos, ++copied);
 				Sector* dataSector = getSector(workingDirCont->sectors[i]);
 				memcpy(curPos, dataSector, SD_SECTORSIZE);
-				printf("Trying to free %p\n", dataSector);
+				if (DEBUG) printf("Trying to free %p\n", dataSector);
 				free(dataSector);
-				printf("Done freeing\n");
+				if (DEBUG) printf("Done freeing\n");
 				curPos += SD_SECTORSIZE;
 			}
 		}
 	} while( (workingDirCont = (inodeFile*)getCont((inode*)workingDirCont)) != 0);
-	printf("Finished copying data\n");
+	if (DEBUG) printf("Finished copying data\n");
 	return fd->num;
 }
 
@@ -610,11 +602,9 @@ void addSector(inodeFile* parent) {
 			inodeFile* contInode = (inodeFile*)getInode(contInodeNum);
 			initFile(contInode, contInodeNum, -1, -1, "");
 			parent->cont = contInodeNum;
-			printf("Created a cont - is it a file? %i\n", contInode->isFile);
 			saveInode((inode*)contInode);
 			free(contInode);
 			contInode = (inodeFile*)getInode(contInodeNum);
-			printf("Read the cont off the disk - is it a file? %i\n", contInode->isFile);
 		}
 		if (DEBUG) printf("Adding the child to the continuing inode...\n");
 		inode* contInode = getInode(parent->cont);
@@ -881,8 +871,6 @@ int sfs_fopen(char* name) {
 	tokenResult* tokens = parsePath(name);
 	int i;
 	
-	printf("Begin searching for file %s\n", name);
-	
 	for (i = 0; i < tokens->numTokens - 1; i++) {
 		if (strcmp(tokens->tokens[i], ".") == 0) {
 			// do nothing
@@ -930,12 +918,9 @@ int sfs_fopen(char* name) {
 		}
 	}
 	
-	printf("End searching for file's directory path\n");
-	
 	if (!error) {
 		bool found = 0;
 		inode* child;
-		printf("Begin searching for child\n");
 		inodeDir* workingDirCont = malloc(inodeSize);
 		memcpy(workingDirCont, workingDir, inodeSize);
 		do {
@@ -952,8 +937,6 @@ int sfs_fopen(char* name) {
 			if (found) break;
 		} while( (workingDirCont = (inodeDir*)getCont((inode*)workingDirCont)) != 0);
 		
-		printf("End searching for child. Found? %i\n", found);
-		
 		if (!found) {
 			int newInode = createInode();
 			child = getInode(newInode);
@@ -964,16 +947,12 @@ int sfs_fopen(char* name) {
 			saveInode((inode*)workingDir);
 		}
 		
-		printf("Create the file descriptor\n");
 		int fdNum = createFd(child);
 		
-		printf("Free the working directory\n");
 		free(workingDir);
 		
-		printf("Free the tokens\n");
 		freeToken(tokens);
 		
-		printf("Return the fd num %i\n", fdNum);
 		return fdNum;
 	} else {
 		freeToken(tokens);
@@ -992,9 +971,7 @@ int sfs_fopen(char* name) {
  *
  */
 int sfs_fclose(int fileID) {
-	printf("Writing to disk...\n");
 	writeFdToDisk(fileID);
-	printf("Deleting the file descriptor...\n");
 	deleteFd(fileID);
     return 0;
 } /* !sfs_fclose */
@@ -1040,7 +1017,7 @@ int sfs_fwrite(int fileID, char *buffer, int length) {
 	fileDescriptor* fd = findFd(fileID);
 	int filesize = ((inodeFile*)fd->INODE)->filesize;
 	int sizeDiff = fd->curPos + length - filesize;
-	printf("Writing to file, changing the size by %i\n", sizeDiff);
+	if (DEBUG) printf("Writing to file, changing the size by %i\n", sizeDiff);
 	if (sizeDiff > 0) {
 		filesize += sizeDiff;
 		((inodeFile*)fd->INODE)->filesize += sizeDiff;
@@ -1054,7 +1031,7 @@ int sfs_fwrite(int fileID, char *buffer, int length) {
 	
 	fd->data = realloc(fd->data, filesize);
 	memcpy(fd->data + fd->curPos, buffer, length);
-	printf("The file size after writing is %i\n", ((inodeFile*)fd->INODE)->filesize);
+	if (DEBUG) printf("The file size after writing is %i\n", ((inodeFile*)fd->INODE)->filesize);
     return length;
 } /* !sfs_fwrite */
 
@@ -1073,7 +1050,7 @@ int sfs_lseek(int fileID, int position) {
 	if (fd == NULL) {
 		return -1;
 	}
-	if (position > ((inodeFile*)fd->INODE)->filesize) {
+	if (position >= ((inodeFile*)fd->INODE)->filesize) {
 		return -1;
 	}
 	fd->curPos = position;

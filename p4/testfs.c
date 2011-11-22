@@ -155,7 +155,7 @@ int runTests() {
     f_ls_base = fopen("base.ls", "w");
     f_ls = f_ls_base;
 	
-    /*RUN_TEST(initFSTest());
+    RUN_TEST(initFSTest());
 	RUN_TEST(createSimpleFileTest());
     RUN_TEST(createSimpleFileWriteReadTest());
 	RUN_TEST(nestedFoldersTest());
@@ -163,10 +163,9 @@ int runTests() {
     RUN_TEST(multipleFoldersTest());
 	RUN_TEST(singleBigFileTest());
     RUN_TEST(multipleFilesTest());
-	RUN_TEST(multipleOpenFilesTest());*/
-    
+	RUN_TEST(multipleOpenFilesTest());
     RUN_TEST(appendFileTest());
-    //RUN_TEST(errorTest());
+    RUN_TEST(errorTest());
 #else
     f_ls_compTest = fopen("compTest.ls", "w");
     f_ls = f_ls_compTest;
@@ -1042,32 +1041,27 @@ int testFile(char* name, int fsize) {
 
     LOG(stdout, "Create file...\n");
 
-	printf("TEST: Open file 1\n");
     fd = sfs_fopen(name);
     FAIL_BRK((fd == -1), stdout, "Error: Open file failed for: %s\n", name);
 
     initBuffer(buf, fsize);
 
     /* write to disk */
-	printf("TEST: Write file 1\n");
     FAIL_BRK((sfs_fwrite(fd, buf, fsize) == -1), stdout,
             "Error: Writing %d bytes to file %s failed!\n", fsize, name);
 
     /* close file */
-	printf("TEST: Close file 1\n");
     FAIL_BRK(sfs_fclose(fd), stdout, "Closing file %s failed!\n", name);
 
     /* save disk, close it and reload it to make sure changes are flushed to disk */
     FAIL_BRK(refreshDisk(), stdout, "Error: Refreshing disk failed\n");
 
     /* open file again */
-	printf("TEST: Open file 2\n");
     fd = sfs_fopen(name);
     FAIL_BRK((fd == -1), stdout, "Error: Second open file failed for: %s\n",
             name);
 
     /* read file */
-	printf("TEST: Read file 2\n");
     int fsize2;
     FAIL_BRK(((fsize2 = sfs_fread(fd, cpy, fsize)) == -1), stdout,
             "Read failed for: %s\n", name);
@@ -1083,13 +1077,10 @@ int testFile(char* name, int fsize) {
             "Error: Contents don't match\n");
 
     /* reset file */
-	printf("TEST: Close file  2\n");
     FAIL_BRK(sfs_fclose(fd), stdout, "Error: Closing file (%d)(%s) failed\n",
             fd, name);
 			
-	printf("TEST: Open file 3\n");
     fd = sfs_fopen(name);
-	printf("Hooray! We opened file 3\n");
     FAIL_BRK((fd == -1), stdout, "Error: Opening file (%s) failed\n", name);
 
     free(cpy);
@@ -1106,7 +1097,6 @@ int testFile(char* name, int fsize) {
 
         /* read */
         int bytesActuallyRead;
-		printf("TEST: Read file 3\n");
         bytesActuallyRead = sfs_fread(fd, cpy + bytes, bytesToRead);
         FAIL_BRK((bytesActuallyRead == -1), stdout,
                 "Error: Read failed for: %s\n", name);
@@ -1123,9 +1113,7 @@ int testFile(char* name, int fsize) {
             "Error: Contents don't match\n");
 
     /* reset file */
-	printf("TEST: Close file 3\n");
     FAIL_BRK(sfs_fclose(fd), stdout, "Error: Closing file (%d) failed\n", fd);
-	printf("TEST: Open file 4\n");
     fd = sfs_fopen(name);
     FAIL_BRK((fd == -1), stdout, "Error: Opening file (%s) failed\n", name);
 
@@ -1157,7 +1145,6 @@ int testFile(char* name, int fsize) {
     FAIL_BRK(checkBuffers(buf, cpy, bytesToRead, offset), stdout,
             "Error: Contents do not match\n");
 
-	printf("TEST: Close file 4\n");
     FAIL_BRK(sfs_fclose(fd), stdout, "Error: Closing file (%d) failed\n", fd);
 
     SAFE_FREE(buf);
