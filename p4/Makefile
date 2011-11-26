@@ -29,8 +29,8 @@ RM = rm
 MKDIR = mkdir
 TAR = tar cvf
 COMPRESS = gzip
-CFLAGS = -Wall -lm -g -D_GNU_SOURCE 
-#CFLAGS = -Wall -lm -g -D_GNU_SOURCE -DSD_WITHERROR
+#CFLAGS = -Wall -lm -g -D_GNU_SOURCE 
+CFLAGS = -Wall -lm -g -D_GNU_SOURCE -DSD_WITHERROR
 
 DELIVERY = Makefile sfs.c sfs.h testfs.c DOC TEAMNAME
 PROGS = testfs testfs-ec testfs-compTest

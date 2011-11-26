@@ -130,7 +130,7 @@ void addSector(inodeFile*);
 
 Sector* getSector(int sector) {
 	Sector* retrievedSector = malloc(sizeof(Sector));
-	SD_read(sector, retrievedSector);
+	while (SD_read(sector, retrievedSector) != 0) {}
 	return retrievedSector;
 }
 
@@ -144,7 +144,7 @@ void markSectorAsUsed(int sector) {
 	int* intToInspect = (int*)bitmapSector + (int)(floor( sectorOffset / 32 ));
 	
 	setBit(intToInspect, sectorOffset % 32);
-	SD_write(bitmapSectorNumber, bitmapSector);
+	while ( SD_write(bitmapSectorNumber, bitmapSector) != 0 ) {}
 	
 	free(bitmapSector);
 }
@@ -159,7 +159,7 @@ void markSectorAsNotUsed(int sector) {
 	int* intToInspect = (int*)bitmapSector + (int)(floor( sectorOffset / 32 ));
 	
 	clearBit(intToInspect, sectorOffset % 32);
-	SD_write(bitmapSectorNumber, bitmapSector);
+	while ( SD_write(bitmapSectorNumber, bitmapSector) != 0 ) {}
 	
 	free(bitmapSector);
 }
@@ -173,7 +173,7 @@ void markInodeAsUsed(int inodeNumber) {
 	int* intToInspect = (int*)inodeSector + (int)(floor( sectorOffset / 32 ));
 	
 	setBit(intToInspect, sectorOffset % 32);
-	SD_write(inodeSectorNumber, inodeSector);
+	while ( SD_write(inodeSectorNumber, inodeSector) != 0 ) {}
 	
 	free(inodeSector);
 }
@@ -187,7 +187,7 @@ void markInodeAsNotUsed(int inodeNumber) {
 	int* intToInspect = (int*)inodeSector + (int)(floor( sectorOffset / 32 ));
 	
 	clearBit(intToInspect, sectorOffset % 32);
-	SD_write(inodeSectorNumber, inodeSector);
+	while ( SD_write(inodeSectorNumber, inodeSector) != 0 ) {}
 	
 	free(inodeSector);
 }
@@ -341,7 +341,7 @@ void saveInode(inode* INODE) {
 	}
 	
 	Sector* inodeSectorCopy = inodeSector;
-	SD_write(inodeSectorNumber, inodeSectorCopy);
+	while ( SD_write(inodeSectorNumber, inodeSectorCopy) != 0 ) {}
 	
 	free(inodeSector);
 }
@@ -387,14 +387,14 @@ void toggleBit(int* sequence, int bitNum) {
 void initSector(int sector) {
 	Sector* bitmapSector = malloc(sizeof(Sector));
 	int* intBoundary = (int*)bitmapSector;
-	SD_read(sector, bitmapSector);
+	while ( SD_read(sector, bitmapSector) != 0 ) {}
 	int i;
 	for (i = 0; i < SD_SECTORSIZE / sizeof(int); i++) {
 		*intBoundary = 0;
 		intBoundary++;
 	}
 	*(int*)bitmapSector = 0;
-	SD_write(sector, bitmapSector);
+	while ( SD_write(sector, bitmapSector) != 0 ) {}
 	free(bitmapSector);
 }
 
@@ -562,7 +562,7 @@ void writeFdToDisk(int fdNum) {
 			if (workingDirCont->sectors[i] != -1) {
 				Sector* dataSector = malloc(SD_SECTORSIZE);
 				memcpy(dataSector, curPos, SD_SECTORSIZE);
-				SD_write(workingDirCont->sectors[i], dataSector);
+				while ( SD_write(workingDirCont->sectors[i], dataSector) != 0 ) {}
 				free(dataSector);
 				curPos += SD_SECTORSIZE;
 			}
